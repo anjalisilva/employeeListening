@@ -1250,4 +1250,342 @@ write.csv(adjusted_constraint_summary,
   here::here("tables", "adjusted_constraint_summary.csv"),
   row.names = FALSE)
 
+# compare individual ceiling measures ------------------------
+
+# model career growth using separate ceiling indicators
+career_growth_components_model <- stats::lm(
+  career_growth_score ~
+    top_of_ladder +
+    long_time_in_level +
+    near_top_of_pay_band +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data |> dplyr::filter(survey_respondent))
+
+
+# model promotion using separate ceiling indicators
+promotion_components_model <- stats::glm(
+  promoted_last_24mo ~
+    top_of_ladder +
+    long_time_in_level +
+    near_top_of_pay_band +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data,
+  family = stats::binomial())
+
+
+# model voluntary turnover using separate ceiling indicators
+turnover_components_model <- stats::glm(
+  voluntary_turnover ~
+    top_of_ladder +
+    long_time_in_level +
+    near_top_of_pay_band +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data,
+  family = stats::binomial())
+
+# extract career growth component estimates 
+career_growth_component_results <- broom::tidy(
+  career_growth_components_model,
+  conf.int = TRUE) |>
+  dplyr::filter(
+    term %in% c(
+      "top_of_ladderTRUE",
+      "long_time_in_levelTRUE",
+      "near_top_of_pay_bandTRUE")) |>
+  dplyr::mutate(
+    ceiling_measure = dplyr::case_when(
+      term == "top_of_ladderTRUE" ~ "Top of ladder",
+      term == "long_time_in_levelTRUE" ~ "Long time in level",
+      term == "near_top_of_pay_bandTRUE" ~ "Near top of pay band"),
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2))) |>
+  dplyr::select(
+    ceiling_measure, estimate, conf.low, conf.high, p.value)
+
+cat("\nAdjusted career growth results by ceiling measure:\n")
+print(career_growth_component_results)
+
+# extract promotion odds ratios 
+promotion_component_results <- broom::tidy(
+  promotion_components_model,
+  conf.int = TRUE,
+  exponentiate = TRUE) |>
+  dplyr::filter(
+    term %in% c(
+      "top_of_ladderTRUE",
+      "long_time_in_levelTRUE",
+      "near_top_of_pay_bandTRUE")) |>
+  dplyr::mutate(
+    ceiling_measure = dplyr::case_when(
+      term == "top_of_ladderTRUE" ~ "Top of ladder",
+      term == "long_time_in_levelTRUE" ~ "Long time in level",
+      term == "near_top_of_pay_bandTRUE" ~ "Near top of pay band"),
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2))) |>
+  dplyr::select(ceiling_measure, estimate, conf.low, conf.high, p.value)
+
+cat("\nAdjusted promotion odds ratios by ceiling measure:\n")
+print(promotion_component_results)
+
+# extract voluntary turnover odds ratios 
+turnover_component_results <- broom::tidy(
+  turnover_components_model,
+  conf.int = TRUE,
+  exponentiate = TRUE) |>
+  dplyr::filter(
+    term %in% c(
+      "top_of_ladderTRUE",
+      "long_time_in_levelTRUE",
+      "near_top_of_pay_bandTRUE")) |>
+  dplyr::mutate(
+    ceiling_measure = dplyr::case_when(
+      term == "top_of_ladderTRUE" ~ "Top of ladder",
+      term == "long_time_in_levelTRUE" ~ "Long time in level",
+      term == "near_top_of_pay_bandTRUE" ~ "Near top of pay band"),
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2))) |>
+  dplyr::select(ceiling_measure, estimate, conf.low, conf.high, p.value)
+
+cat("\nAdjusted turnover odds ratios by ceiling measure:\n")
+print(turnover_component_results)
+
+# combine individual ceiling results 
+ceiling_component_summary <- dplyr::bind_rows(
+  career_growth_component_results |>
+    dplyr::mutate(
+      outcome = "Career growth score",
+      measure = "Adjusted mean difference"),
+  
+  promotion_component_results |>
+    dplyr::mutate(
+      outcome = "Promotion",
+      measure = "Adjusted odds ratio"),
+  
+  turnover_component_results |>
+    dplyr::mutate(
+      outcome = "Voluntary turnover",
+      measure = "Adjusted odds ratio")) |>
+  dplyr::select(
+    outcome, ceiling_measure, measure, estimate,
+    conf.low,
+    conf.high,
+    p.value)
+
+cat("\nAdjusted results for individual ceiling measures:\n")
+print(ceiling_component_summary)
+
+# save individual ceiling model results 
+
+write.csv(
+  career_growth_component_results,
+  here::here("tables", "career_growth_ceiling_components.csv"),
+  row.names = FALSE)
+
+write.csv(
+  promotion_component_results,
+  here::here("tables", "promotion_ceiling_components.csv"),
+  row.names = FALSE)
+
+write.csv(
+  turnover_component_results,
+  here::here("tables", "turnover_ceiling_components.csv"),
+  row.names = FALSE)
+
+write.csv(
+  ceiling_component_summary,
+  here::here("tables", "ceiling_component_summary.csv"),
+  row.names = FALSE)
+
+
+# compare structure and manager support ----------------------
+
+# model career growth using manager support 
+career_growth_manager_model <- stats::lm(
+  career_growth_score ~
+    mgr_1 +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data |>
+    dplyr::filter(survey_respondent))
+
+
+# model career growth using both structural ceilings and manager support
+career_growth_full_model <- stats::lm(
+  career_growth_score ~
+    top_of_ladder +
+    long_time_in_level +
+    near_top_of_pay_band +
+    mgr_1 +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data |>
+    dplyr::filter(survey_respondent))
+
+# extract manager support result 
+manager_support_result <- broom::tidy(
+  career_growth_manager_model,
+  conf.int = TRUE) |>
+  dplyr::filter(term == "mgr_1") |>
+  dplyr::mutate(
+    model = "Manager support only",
+    measure = "Adjusted mean difference",
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2)))
+
+
+# extract results from combined model 
+structure_manager_results <- broom::tidy(
+  career_growth_full_model,
+  conf.int = TRUE) |>
+  dplyr::filter(
+    term %in% c(
+      "top_of_ladderTRUE",
+      "long_time_in_levelTRUE",
+      "near_top_of_pay_bandTRUE",
+      "mgr_1")) |>
+  dplyr::mutate(
+    predictor = dplyr::case_when(
+      term == "top_of_ladderTRUE" ~ "Top of ladder",
+      term == "long_time_in_levelTRUE" ~ "Long time in level",
+      term == "near_top_of_pay_bandTRUE" ~ "Near top of pay band",
+      term == "mgr_1" ~ "Manager support"),
+    model = "Structure and manager support",
+    measure = "Adjusted mean difference",
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2))) |>
+  dplyr::select(
+    predictor,
+    model,
+    measure,
+    estimate,
+    conf.low,
+    conf.high,
+    p.value)
+
+cat("\nManager support model result:\n")
+print(manager_support_result)
+
+cat("\nCombined structure and manager support results:\n")
+print(structure_manager_results)
+
+# compare model explanatory power 
+career_growth_model_comparison <- data.frame(
+  model = c(
+    "Structural ceilings only",
+    "Manager support only",
+    "Structure and manager support"),
+  adjusted_r_squared = c(
+    summary(career_growth_components_model)$adj.r.squared,
+    summary(career_growth_manager_model)$adj.r.squared,
+    summary(career_growth_full_model)$adj.r.squared),
+  sample_size = c(
+    stats::nobs(career_growth_components_model),
+    stats::nobs(career_growth_manager_model),
+    stats::nobs(career_growth_full_model))) |>
+  dplyr::mutate(
+    adjusted_r_squared = round(adjusted_r_squared, 2))
+
+cat("\nCareer growth model comparison:\n")
+print(career_growth_model_comparison)
+
+# compare estimates before and after manager support 
+structure_only_estimates <- broom::tidy(
+  career_growth_components_model,
+  conf.int = TRUE) |>
+  dplyr::filter(
+    term %in% c(
+      "top_of_ladderTRUE",
+      "long_time_in_levelTRUE",
+      "near_top_of_pay_bandTRUE")) |>
+  dplyr::transmute(
+    term, structure_only_estimate = estimate)
+
+
+structure_with_manager_estimates <- broom::tidy(
+  career_growth_full_model,
+  conf.int = TRUE) |>
+  dplyr::filter(
+    term %in% c(
+      "top_of_ladderTRUE",
+      "long_time_in_levelTRUE",
+      "near_top_of_pay_bandTRUE")) |>
+  dplyr::transmute(
+    term, structure_with_manager_estimate = estimate)
+
+
+structure_estimate_comparison <- structure_only_estimates |>
+  dplyr::left_join(
+    structure_with_manager_estimates,
+    by = "term") |>
+  dplyr::mutate(
+    ceiling_measure = dplyr::case_when(
+      term == "top_of_ladderTRUE" ~ "Top of ladder",
+      term == "long_time_in_levelTRUE" ~ "Long time in level",
+      term == "near_top_of_pay_bandTRUE" ~ "Near top of pay band"),
+    change_after_manager_support =
+      structure_with_manager_estimate -
+      structure_only_estimate,
+    dplyr::across(
+      c(structure_only_estimate,
+        structure_with_manager_estimate,
+        change_after_manager_support), ~ round(.x, 2))) |>
+  dplyr::select(
+    ceiling_measure,
+    structure_only_estimate,
+    structure_with_manager_estimate,
+    change_after_manager_support)
+
+cat("\nStructural estimates before and after manager support:\n")
+print(structure_estimate_comparison)
+
+# save structure and manager support results 
+write.csv(manager_support_result,
+  here::here("tables", "manager_support_result.csv"),
+  row.names = FALSE)
+
+write.csv(structure_manager_results,
+  here::here("tables", "structure_manager_results.csv"),
+  row.names = FALSE)
+
+write.csv(career_growth_model_comparison,
+  here::here("tables", "career_growth_model_comparison.csv"),
+  row.names = FALSE)
+
+write.csv(structure_estimate_comparison,
+  here::here("tables", "structure_estimate_comparison.csv"),
+  row.names = FALSE)
+
 # [END]
