@@ -8,6 +8,23 @@ library(dplyr)
 library(janitor)
 library(here)
 
+# assumptions ----------------------------------------------------------
+
+# long time in level defined as 48 months or more
+long_time_threshold <- 48
+
+# near top of pay band defined as 90% or more
+pay_band_threshold <- 0.90
+
+# minimum group size used for subgroup reporting
+minimum_group_size <- 30
+
+# assume for Listening_Survey, a 1 to 5 agreement scale
+# interpret 1 as strongly disagree and 5 as strongly agree for all listening items 
+# higher values are favorable except for stuck_1: 
+# - 1 Strongly disagree (unfavorable, except stuck 1 favorable)
+# - 5 Strongly agree  (favorable, except stuck 1 unfavorable)
+
 # options ------------------------------------------------------------
 # suppresses informational messages produced by dplyr::summarise()
 # scipen = 999 stop scientific notation for salary data
@@ -23,7 +40,7 @@ workbook_path <- here::here(
 if (!file.exists(workbook_path)) {
   stop("File not found: ", workbook_path)}
 
-# check workbook tabs ----------------------------------------------------
+# check workbook tabs and read content ---------------------------------------
 
 required_sheets <- c(
   "README",
@@ -46,9 +63,7 @@ if (length(missing_sheets) > 0) {
   cat("All 5 required workbook tabs are present:\n",
   paste(available_sheets, collapse = "\n"),"\n")}
 
-
-# read workbook tabs -----------------------------------------------------
-
+# read workbook content 
 readme <- readxl::read_excel(
   workbook_path,
   sheet = "README")
@@ -69,8 +84,7 @@ listening_survey_raw <- readxl::read_excel(
   workbook_path,
   sheet = "Listening_Survey")
 
-# check sheet sizes ------------------------------------------------------
-
+# check sheet sizes 
 sheet_sizes <- data.frame(
   sheet = required_sheets,
   rows = c(
@@ -78,16 +92,13 @@ sheet_sizes <- data.frame(
     nrow(data_dictionary),
     nrow(employees_raw),
     nrow(job_architecture_raw),
-    nrow(listening_survey_raw)
-  ),
+    nrow(listening_survey_raw)),
   columns = c(
     ncol(readme),
     ncol(data_dictionary),
     ncol(employees_raw),
     ncol(job_architecture_raw),
-    ncol(listening_survey_raw)
-  )
-)
+    ncol(listening_survey_raw)))
 
 # provide user with sheet sizes
 cat("5 sheet sizes:\n")
@@ -435,7 +446,7 @@ pay_band_exceptions <- employees |>
 cat("\nEmployees outside assigned pay bands:",
   nrow(pay_band_exceptions),"\n") # 209
 
-# summarize structural ceilings - question 1 in case study -------------
+# question 1 - summarize structural ceilings --------------------------
 
 # summarize by job family 
 family_ceiling_summary <- employees |>
@@ -449,17 +460,18 @@ family_ceiling_summary <- employees |>
     levels_in_family = dplyr::first(levels_in_family),
     top_of_ladder_n = sum(top_of_ladder, na.rm = TRUE),
     # pct = percentage; proportion of employees at the top of the ladder
-    top_of_ladder_pct = round(mean(top_of_ladder, na.rm = TRUE) * 100, 2),
+    top_of_ladder_pct = mean(top_of_ladder, na.rm = TRUE) * 100,
     long_time_n = sum(long_time_in_level, na.rm = TRUE),
     # percentage of employees who have spent at least 48 months in current role 
-    long_time_pct = round(mean(long_time_in_level, na.rm = TRUE) * 100, 2),
+    long_time_pct = mean(long_time_in_level, na.rm = TRUE) * 100,
     near_band_top_n = sum(near_top_of_pay_band, na.rm = TRUE),
     # percentage of employees whose salary is at or above 90% of assigned pay 
-    near_band_top_pct = round(mean(near_top_of_pay_band, na.rm = TRUE) * 100, 2),
+    near_band_top_pct = mean(near_top_of_pay_band, na.rm = TRUE) * 100,
     high_constraint_n = sum(high_constraint, na.rm = TRUE),
     # percentage of employees who meet definition of high structural constraint
     # ceiling_count >= 2
-    high_constraint_pct = round(mean(high_constraint, na.rm = TRUE) * 100, 2) ) |>
+    high_constraint_pct = mean(high_constraint, na.rm = TRUE) * 100) |>
+  dplyr::mutate(across(ends_with("_pct"), ~ round(.x, 2))) |>
   dplyr::arrange(desc(high_constraint_pct))
 
 # summarize by worker type
@@ -468,13 +480,14 @@ worker_type_ceiling_summary <- employees |>
   dplyr::summarise(
     employees = dplyr::n(),
     top_of_ladder_n = sum(top_of_ladder, na.rm = TRUE),
-    top_of_ladder_pct = round(mean(top_of_ladder, na.rm = TRUE) * 100, 2),
+    top_of_ladder_pct = mean(top_of_ladder, na.rm = TRUE) * 100,
     long_time_n = sum(long_time_in_level, na.rm = TRUE),
-    long_time_pct = round(mean(long_time_in_level, na.rm = TRUE) * 100, 2),
+    long_time_pct = mean(long_time_in_level, na.rm = TRUE) * 100,
     near_band_top_n = sum(near_top_of_pay_band, na.rm = TRUE),
-    near_band_top_pct = round(mean(near_top_of_pay_band, na.rm = TRUE) * 100, 2),
+    near_band_top_pct = mean(near_top_of_pay_band, na.rm = TRUE) * 100,
     high_constraint_n = sum(high_constraint, na.rm = TRUE),
-    high_constraint_pct = round(mean(high_constraint, na.rm = TRUE) * 100, 2)) |>
+    high_constraint_pct = mean(high_constraint, na.rm = TRUE) * 100) |>
+  dplyr::mutate(across(ends_with("_pct"), ~ round(.x, 2))) |>
   dplyr::arrange(desc(high_constraint_pct))
 
 # summarize by site
@@ -483,13 +496,14 @@ site_ceiling_summary <- employees |>
   dplyr::summarise(
     employees = dplyr::n(),
     top_of_ladder_n = sum(top_of_ladder, na.rm = TRUE),
-    top_of_ladder_pct = round(mean(top_of_ladder, na.rm = TRUE) * 100, 2),
+    top_of_ladder_pct = mean(top_of_ladder, na.rm = TRUE) * 100,
     long_time_n = sum(long_time_in_level, na.rm = TRUE),
-    long_time_pct = round(mean(long_time_in_level, na.rm = TRUE) * 100, 2),
+    long_time_pct = mean(long_time_in_level, na.rm = TRUE) * 100,
     near_band_top_n = sum(near_top_of_pay_band, na.rm = TRUE),
-    near_band_top_pct = round(mean(near_top_of_pay_band, na.rm = TRUE) * 100, 2),
+    near_band_top_pct = mean(near_top_of_pay_band, na.rm = TRUE) * 100,
     high_constraint_n = sum(high_constraint, na.rm = TRUE),
-    high_constraint_pct = round(mean(high_constraint, na.rm = TRUE) * 100, 2)) |>
+    high_constraint_pct = mean(high_constraint, na.rm = TRUE) * 100) |>
+  dplyr::mutate(across(ends_with("_pct"), ~ round(.x, 2))) |>
   dplyr::arrange(desc(high_constraint_pct))
 
 # print ceiling summaries 
@@ -516,3 +530,286 @@ write.csv(worker_type_ceiling_summary,
 write.csv(site_ceiling_summary,
   here::here("tables", "site_ceiling_summary.csv"),
   row.names = FALSE)
+
+# summarize ceilings by job family and site -------------------------------
+
+# - done to separate true site effect from differences caused by  mix 
+#   of job families at each site
+# - a site could have a high ceiling rate because it employs many people in 
+#   short-ladder technician families, which doesn't mean the site has weaker management
+family_site_ceiling_summary <- employees |>
+  dplyr::group_by(site, job_family) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    top_of_ladder_n = sum(top_of_ladder, na.rm = TRUE),
+    top_of_ladder_pct = mean(top_of_ladder, na.rm = TRUE) * 100,
+    long_time_n = sum(long_time_in_level, na.rm = TRUE),
+    long_time_pct = mean(long_time_in_level, na.rm = TRUE) * 100,
+    near_band_top_n = sum(near_top_of_pay_band, na.rm = TRUE),
+    near_band_top_pct = mean(near_top_of_pay_band, na.rm = TRUE) * 100,
+    high_constraint_n = sum(high_constraint, na.rm = TRUE),
+    high_constraint_pct = mean(high_constraint, na.rm = TRUE) * 100) |>
+  dplyr::mutate(across(ends_with("_pct"), ~ round(.x, 2))) |>
+  dplyr::arrange(site, desc(high_constraint_pct))
+
+
+# print family and site summary 
+cat("\nStructural ceilings by site and job family:\n")
+print(family_site_ceiling_summary)
+
+
+# identify larger comparison groups
+# small groups can produce unstable percentages e.g., 2/4 = 50%
+minimum_group_size <- 30
+family_site_priority <- family_site_ceiling_summary |>
+  filter(employees >= minimum_group_size) |>
+  arrange(desc(high_constraint_pct))
+
+cat("\nHighest constraint site and family groups with at least 30 employees:\n")
+print(family_site_priority)
+
+# save family and site summaries 
+write.csv(family_site_ceiling_summary,
+  here::here("tables", "family_site_ceiling_summary.csv"),
+  row.names = FALSE)
+
+write.csv(family_site_priority,
+  here::here("tables", "family_site_priority.csv"),
+  row.names = FALSE)
+
+# [END]
+# question 2: prepare listening survey measures --------------------------
+
+# define survey items used in each measure
+career_growth_items <- c("grow_1", "grow_2", "grow_3")
+engagement_items <- c("eng_1", "eng_2")
+
+# create survey measures
+listening_survey <- listening_survey |>
+  dplyr::mutate(
+    # average of three career growth items
+    career_growth_score = rowMeans(
+      dplyr::across(all_of(career_growth_items)), na.rm = TRUE),
+    
+    # proportion of career growth items rated favorable (responses 4 or 5)
+    career_growth_favorable = rowMeans(
+      dplyr::across(all_of(career_growth_items), ~ .x >= 4), 
+      na.rm = TRUE) * 100,
+    
+    # average of two engagement items
+    engagement_score = rowMeans(
+      dplyr::across(all_of(engagement_items)), na.rm = TRUE),
+    
+    # reverse score so higher values indicate feeling less stuck
+    stuck_reversed = 6 - stuck_1)
+
+# review listening survey measures 
+
+# career-growth scores between 1 and 5
+cat("\nCareer growth score summary:\n")
+print(summary(listening_survey$career_growth_score))
+
+# favorability between 0 and 100
+cat("\nCareer growth favorable percentage summary:\n")
+print(summary(listening_survey$career_growth_favorable))
+
+# engagement scores between 1 and 5
+cat("\nEngagement score summary:\n")
+print(summary(listening_survey$engagement_score))
+
+# reversed stuck values between 1 and 5
+cat("\nReversed feeling stuck summary:\n")
+print(summary(listening_survey$stuck_reversed))
+
+# replace undefined row means with missing values 
+
+listening_survey <- listening_survey |>
+  dplyr::mutate(
+    career_growth_score = ifelse(
+      is.nan(career_growth_score),
+      NA_real_,
+      career_growth_score),
+    career_growth_favorable = ifelse(
+      is.nan(career_growth_favorable),
+      NA_real_,
+      career_growth_favorable),
+    engagement_score = ifelse(
+      is.nan(engagement_score),
+      NA_real_,
+      engagement_score))
+
+
+# join survey measures to employee data ----------------------------------
+
+analysis_data <- employees |>
+  # left join retains all 6000 employees
+  # inner_join() would remove nonrespondents and reduce employee
+  # analysis population
+  dplyr::left_join(
+    listening_survey,
+    by = "employee_id") |>
+  dplyr::mutate(survey_respondent = !is.na(career_growth_score))
+
+cat("\nRows in combined analysis data:", nrow(analysis_data), "\n")
+
+cat("\nSurvey respondent status:\n")
+print(table(analysis_data$survey_respondent, useNA = "ifany"))
+
+# check survey records without matching employees 
+unmatched_survey_records <- listening_survey |>
+  dplyr::anti_join(employees, by = "employee_id")
+
+cat("\nSurvey records without matching employees:", 
+    nrow(unmatched_survey_records), "\n") # 0
+
+
+# check survey coverage by employee group --------------------------------
+
+# this analysis help ID if some groups are underrepresented in 
+# listening-survey results
+
+# survey response rate by job family
+survey_coverage_family <- analysis_data |>
+  dplyr::group_by(job_family) |>
+  dplyr::summarise(
+    # count employees in each group
+    employees = dplyr::n(),
+    # count survey respondents
+    survey_responses = sum(survey_respondent),
+    # calculate response rate
+    response_rate_pct = mean(survey_respondent) * 100) |>
+  dplyr::mutate(response_rate_pct = round(response_rate_pct, 2)) |>
+  # sort from lowest response rate
+  dplyr::arrange(response_rate_pct)
+
+
+# survey response rate by worker type
+survey_coverage_worker_type <- analysis_data |>
+  dplyr::group_by(worker_type) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    survey_responses = sum(survey_respondent),
+    response_rate_pct = mean(survey_respondent) * 100) |>
+  dplyr::mutate(response_rate_pct = round(response_rate_pct, 2)) |>
+  dplyr::arrange(response_rate_pct)
+
+
+# survey response rate by site
+survey_coverage_site <- analysis_data |>
+  dplyr::group_by(site) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    survey_responses = sum(survey_respondent),
+    response_rate_pct = mean(survey_respondent) * 100) |>
+  dplyr::mutate(response_rate_pct = round(response_rate_pct, 2)) |>
+  dplyr::arrange(response_rate_pct)
+
+
+# print survey coverage summaries 
+cat("\nSurvey coverage by job family:\n")
+print(survey_coverage_family)
+
+cat("\nSurvey coverage by worker type:\n")
+print(survey_coverage_worker_type)
+
+cat("\nSurvey coverage by site:\n")
+print(survey_coverage_site)
+
+# save survey coverage summaries
+write.csv(survey_coverage_family,
+          here::here("tables", "survey_coverage_family.csv"),
+          row.names = FALSE)
+
+write.csv(survey_coverage_worker_type,
+          here::here("tables", "survey_coverage_worker_type.csv"),
+          row.names = FALSE)
+
+write.csv(survey_coverage_site,
+          here::here("tables", "survey_coverage_site.csv"),
+          row.names = FALSE)
+
+# calculate overall survey response rate ---------------------------------
+
+overall_survey_coverage <- analysis_data |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    survey_responses = sum(survey_respondent),
+    response_rate_pct = mean(survey_respondent) * 100) |>
+  dplyr::mutate(response_rate_pct = round(response_rate_pct, 1))
+
+cat("\nOverall survey coverage:\n")
+print(overall_survey_coverage) # 92.9
+
+
+# summarize career growth by ceiling status ------------------------------
+
+# compare career-growth sentiment across structural ceiling indicators
+growth_by_top_of_ladder <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(top_of_ladder) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    # calculate mean career-growth score
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    # calculates percentage favorable
+    career_growth_favorable_pct = mean(career_growth_favorable, na.rm = TRUE)) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2))
+
+
+growth_by_long_time <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(long_time_in_level) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable, na.rm = TRUE)) |>
+  dplyr::mutate(career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2))
+
+
+growth_by_pay_band <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(near_top_of_pay_band) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable, na.rm = TRUE)) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2))
+
+
+growth_by_constraint <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(high_constraint) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable, na.rm = TRUE)) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2))
+
+# print career growth comparisons 
+
+cat("\nCareer growth by top of ladder status:\n")
+print(growth_by_top_of_ladder)
+
+cat("\nCareer growth by long time in level status:\n")
+print(growth_by_long_time)
+
+cat("\nCareer growth by pay band position:\n")
+print(growth_by_pay_band)
+
+cat("\nCareer growth by high constraint status:\n")
+print(growth_by_constraint)
+
