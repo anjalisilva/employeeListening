@@ -317,7 +317,7 @@ print(family_count_check)
 
 # employee records without a matching record in job-architecture table
 unmatched_architecture <- employees |>
-  anti_join(job_architecture,
+  dplyr::anti_join(job_architecture,
     by = c("job_family","job_level" = "level_code")) 
 
 cat("\nEmployees without a matching job architecture record:",
@@ -337,15 +337,182 @@ if (nrow(unmatched_architecture) > 0) {
 # - levels_in_family counts how many job levels exist in each family and
 #   this help ID families which have shorter career ladders
 job_architecture <- job_architecture |>
-  group_by(job_family) |>
-  mutate(highest_level_order = max(level_order, na.rm = TRUE),
+  dplyr::group_by(job_family) |>
+  dplyr::mutate(highest_level_order = max(level_order, na.rm = TRUE),
          levels_in_family = n_distinct(level_code)) |> 
-  ungroup()
+  dplyr::ungroup()
 
 
 # join architecture to employees -----------------------------------------
 
+# left_join() because it keep all employees and adds the matching architecture fields
 employees <- employees |>
-  left_join(job_architecture,
-    by = c("job_family","job_level" = "level_code"))
-cat("\nRows after architecture join:", nrow(employees),"\n")
+  dplyr::left_join(job_architecture,
+  by = c("job_family","job_level" = "level_code"))
+cat("\nRows after architecture join:", nrow(employees),"\n") # 6000
+
+# create structural ceiling measures -------------------------------------
+
+# define analysis thresholds 
+# - long time in level defined as 48 months (4 years) or more
+# - 48-month threshold is an assumption and should later be tested 
+#   using alternatives such as 36 and 60 months
+long_time_threshold <- 48
+
+# near top of pay band defined as 90% or more
+pay_band_threshold <- 0.90
+
+employees <- employees |>
+  dplyr::mutate(
+    # employee is at highest available level in job family
+    top_of_ladder = level_order == highest_level_order,
+    
+    # employee has remained in current level for at least 48 months
+    long_time_in_level = case_when(
+      # preserves missing values without treating it as FALSE
+      is.na(time_in_level_months) ~ NA,
+      time_in_level_months >= long_time_threshold ~ TRUE,
+      # for remaining rows that did not match earlier condition return FALSE
+      TRUE ~ FALSE),
+    
+    # relative salary position within the assigned pay band
+    pay_band_position = dplyr::case_when(
+      # if base_salary is missing return a missing numeric value
+      is.na(base_salary) ~ NA_real_,
+      # if either salary-band minimum or maximum is missing return NA
+      is.na(band_min) | is.na(band_max) ~ NA_real_,
+      # if band maximum is equal to or less than band minimum return NA
+      # done to prevent invalid calculation like division by zero
+      band_max <= band_min ~ NA_real_,
+      # for remaining valid remaining rows, calculate the employee’s position
+      # within salary band
+      TRUE ~ (base_salary - band_min) / (band_max - band_min)),
+    
+    # employee is at or above 90% of the pay band
+    near_top_of_pay_band = dplyr::case_when(
+      is.na(pay_band_position) ~ NA,
+      pay_band_position >= pay_band_threshold ~ TRUE,
+      TRUE ~ FALSE),
+    
+    # number of structural ceiling conditions experienced
+    ceiling_count =
+      dplyr::coalesce(as.integer(top_of_ladder), 0L) +
+      # coalesce replaces NA with 0 
+      dplyr::coalesce(as.integer(long_time_in_level), 0L) +
+      dplyr::coalesce(as.integer(near_top_of_pay_band), 0L),
+    
+    # employee experiences at least two ceiling conditions
+    high_constraint = ceiling_count >= 2)
+
+# review structural ceiling measures 
+
+cat("\nSummary of table:\n")
+dplyr::glimpse(employees)
+
+cat("\nTop of ladder:\n")
+print(table(employees$top_of_ladder, useNA = "ifany"))
+
+cat("\nLong time in level:\n")
+print(table(employees$long_time_in_level, useNA = "ifany"))
+
+cat("\nNear top of pay band:\n")
+print(table(employees$near_top_of_pay_band, useNA = "ifany"))
+
+cat("\nCeiling count:\n")
+print(table(employees$ceiling_count, useNA = "ifany"))
+
+cat("\nHigh structural constraint:\n")
+print(table(employees$high_constraint, useNA = "ifany"))
+
+cat("\nPay band position summary:\n")
+print(summary(employees$pay_band_position))
+
+# check salary values outside assigned pay bands 
+pay_band_exceptions <- employees |>
+  filter(!is.na(pay_band_position),
+          pay_band_position < 0 | pay_band_position > 1)
+
+cat("\nEmployees outside assigned pay bands:",
+  nrow(pay_band_exceptions),"\n") # 209
+
+# summarize structural ceilings - question 1 in case study -------------
+
+# summarize by job family 
+family_ceiling_summary <- employees |>
+  # divide employee table into job-family groups
+  dplyr::group_by(job_family) |>
+  dplyr::summarise(
+    # number of employees in each group
+    employees = dplyr::n(),
+    # first() returns common value without adding it to group_by()
+    # levels_in_family is presumably same for every employee within a job family
+    levels_in_family = dplyr::first(levels_in_family),
+    top_of_ladder_n = sum(top_of_ladder, na.rm = TRUE),
+    # pct = percentage; proportion of employees at the top of the ladder
+    top_of_ladder_pct = round(mean(top_of_ladder, na.rm = TRUE) * 100, 2),
+    long_time_n = sum(long_time_in_level, na.rm = TRUE),
+    # percentage of employees who have spent at least 48 months in current role 
+    long_time_pct = round(mean(long_time_in_level, na.rm = TRUE) * 100, 2),
+    near_band_top_n = sum(near_top_of_pay_band, na.rm = TRUE),
+    # percentage of employees whose salary is at or above 90% of assigned pay 
+    near_band_top_pct = round(mean(near_top_of_pay_band, na.rm = TRUE) * 100, 2),
+    high_constraint_n = sum(high_constraint, na.rm = TRUE),
+    # percentage of employees who meet definition of high structural constraint
+    # ceiling_count >= 2
+    high_constraint_pct = round(mean(high_constraint, na.rm = TRUE) * 100, 2) ) |>
+  dplyr::arrange(desc(high_constraint_pct))
+
+# summarize by worker type
+worker_type_ceiling_summary <- employees |>
+  dplyr::group_by(worker_type) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    top_of_ladder_n = sum(top_of_ladder, na.rm = TRUE),
+    top_of_ladder_pct = round(mean(top_of_ladder, na.rm = TRUE) * 100, 2),
+    long_time_n = sum(long_time_in_level, na.rm = TRUE),
+    long_time_pct = round(mean(long_time_in_level, na.rm = TRUE) * 100, 2),
+    near_band_top_n = sum(near_top_of_pay_band, na.rm = TRUE),
+    near_band_top_pct = round(mean(near_top_of_pay_band, na.rm = TRUE) * 100, 2),
+    high_constraint_n = sum(high_constraint, na.rm = TRUE),
+    high_constraint_pct = round(mean(high_constraint, na.rm = TRUE) * 100, 2)) |>
+  dplyr::arrange(desc(high_constraint_pct))
+
+# summarize by site
+site_ceiling_summary <- employees |>
+  dplyr::group_by(site) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    top_of_ladder_n = sum(top_of_ladder, na.rm = TRUE),
+    top_of_ladder_pct = round(mean(top_of_ladder, na.rm = TRUE) * 100, 2),
+    long_time_n = sum(long_time_in_level, na.rm = TRUE),
+    long_time_pct = round(mean(long_time_in_level, na.rm = TRUE) * 100, 2),
+    near_band_top_n = sum(near_top_of_pay_band, na.rm = TRUE),
+    near_band_top_pct = round(mean(near_top_of_pay_band, na.rm = TRUE) * 100, 2),
+    high_constraint_n = sum(high_constraint, na.rm = TRUE),
+    high_constraint_pct = round(mean(high_constraint, na.rm = TRUE) * 100, 2)) |>
+  dplyr::arrange(desc(high_constraint_pct))
+
+# print ceiling summaries 
+cat("\nStructural ceilings by job family:\n")
+print(family_ceiling_summary |>
+        arrange(desc(employees)))
+
+cat("\nStructural ceilings by worker type:\n")
+print(worker_type_ceiling_summary)
+
+cat("\nStructural ceilings by site:\n")
+print(site_ceiling_summary |>
+        arrange(desc(employees)))
+
+# save structural ceiling summaries
+write.csv(family_ceiling_summary,
+  here::here("tables", "family_ceiling_summary.csv"),
+  row.names = FALSE)
+
+write.csv(worker_type_ceiling_summary,
+  here::here("tables", "worker_type_ceiling_summary.csv"),
+  row.names = FALSE)
+
+write.csv(site_ceiling_summary,
+  here::here("tables", "site_ceiling_summary.csv"),
+  row.names = FALSE)
