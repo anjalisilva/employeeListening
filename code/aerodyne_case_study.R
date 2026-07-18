@@ -7,6 +7,8 @@ library(readxl)
 library(dplyr)
 library(janitor)
 library(here)
+library(broom)
+library(stats)
 
 # assumptions ----------------------------------------------------------
 
@@ -1018,7 +1020,7 @@ print(outcomes_by_constraint)
 cat("\nPromotion and turnover by number of ceiling conditions:\n")
 print(outcomes_by_ceiling_count)
 
-# summarize outcomes by individual ceiling measures ----------------------
+# summarize outcomes by individual ceiling measures 
 
 outcomes_by_top_of_ladder <- analysis_data |>
   dplyr::group_by(top_of_ladder) |>
@@ -1052,5 +1054,200 @@ outcomes_by_pay_band <- analysis_data |>
     promoted_pct = round(promoted_pct, 2),
     turnover_pct = round(turnover_pct, 2))
 
+cat("\nPromotion and turnover by top of ladder status:\n")
+print(outcomes_by_top_of_ladder)
+
+cat("\nPromotion and turnover by long time in level status:\n")
+print(outcomes_by_long_time)
+
+cat("\nPromotion and turnover by pay band position:\n")
+print(outcomes_by_pay_band)
+
+# save promotion and turnover summaries
+write.csv(outcomes_by_constraint,
+  here::here("tables", "outcomes_by_high_constraint.csv"),
+  row.names = FALSE)
+
+write.csv(outcomes_by_ceiling_count,
+  here::here("tables", "outcomes_by_ceiling_count.csv"),
+  row.names = FALSE)
+
+write.csv(outcomes_by_top_of_ladder,
+  here::here("tables", "outcomes_by_top_of_ladder.csv"),
+  row.names = FALSE)
+
+write.csv(outcomes_by_long_time,
+  here::here("tables", "outcomes_by_long_time_in_level.csv"),
+  row.names = FALSE)
+
+write.csv(outcomes_by_pay_band,
+  here::here("tables", "outcomes_by_pay_band_position.csv"),
+  row.names = FALSE)
+
+# adjust outcome models ------------------------------------
+  
+# test if high structural constraint is associated with career growth, 
+# promotion and voluntary turnover after accounting for employee and
+# organizational differences
+
+# turn tenure from months to years for easy analysis
+analysis_data <- analysis_data |>
+  dplyr::mutate(tenure_years = tenure_months / 12,
+    manager_flag = factor(manager_flag),
+    gender = factor(gender),
+    age_band = factor(age_band),
+    site = factor(site),
+    job_family = factor(job_family))
+
+# model career growth among survey respondents
+career_growth_model <- stats::lm(
+  career_growth_score ~
+    high_constraint +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data |>
+    dplyr::filter(survey_respondent))
+
+cat("\nAdjusted career growth model:\n")
+print(summary(career_growth_model))
+
+# model probability of promotion during the last 24 months
+# promotion is coded as 0 or 1 so logistic regression 
+promotion_model <- stats::glm(
+  promoted_last_24mo ~
+    high_constraint +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data,
+  family = stats::binomial())
+
+cat("\nAdjusted promotion model:\n")
+print(summary(promotion_model))
+
+# model probability of voluntary turnover
+turnover_model <- stats::glm(
+  voluntary_turnover ~
+    high_constraint +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    gender +
+    age_band +
+    site +
+    job_family,
+  data = analysis_data,
+  family = stats::binomial())
+
+cat("\nAdjusted voluntary turnover model:\n")
+print(summary(turnover_model))
+
+# extract adjusted career growth results
+career_growth_results <- broom::tidy(
+  career_growth_model,
+  conf.int = TRUE) |>
+  dplyr::mutate(
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2)))
+
+cat("\nAdjusted career growth results:\n")
+print(career_growth_results)
+
+# convert promotion coefficients to odds ratios
+promotion_results <- broom::tidy(
+  promotion_model,
+  conf.int = TRUE,
+  # exponentiate = TRUE so model coefficients are converted to odds ratios
+  exponentiate = TRUE) |>
+  dplyr::mutate(
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2)))
+
+cat("\nAdjusted promotion odds ratios:\n")
+print(promotion_results)
+
+
+# convert turnover coefficients to odds ratios
+turnover_results <- broom::tidy(
+  turnover_model,
+  conf.int = TRUE,
+  exponentiate = TRUE) |>
+  dplyr::mutate(
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2)))
+
+cat("\nAdjusted turnover odds ratios:\n")
+print(turnover_results)
+
+# extract primary structural constraint results
+career_growth_constraint_result <- career_growth_results |>
+  dplyr::filter(term == "high_constraintTRUE")
+
+promotion_constraint_result <- promotion_results |>
+  dplyr::filter(term == "high_constraintTRUE")
+
+turnover_constraint_result <- turnover_results |>
+  dplyr::filter(term == "high_constraintTRUE")
+
+# combine primary adjusted results
+adjusted_constraint_summary <- dplyr::bind_rows(
+  career_growth_constraint_result |>
+    dplyr::transmute(
+      outcome = "Career growth score",
+      measure = "Adjusted mean difference",
+      estimate,
+      conf_low = conf.low,
+      conf_high = conf.high,
+      p_value = p.value),
+  
+  promotion_constraint_result |>
+    dplyr::transmute(
+      outcome = "Promotion",
+      measure = "Adjusted odds ratio",
+      estimate,
+      conf_low = conf.low,
+      conf_high = conf.high,
+      p_value = p.value),
+  
+  turnover_constraint_result |>
+    dplyr::transmute(
+      outcome = "Voluntary turnover",
+      measure = "Adjusted odds ratio",
+      estimate,
+      conf_low = conf.low,
+      conf_high = conf.high,
+      p_value = p.value))
+
+cat("\nAdjusted high constraint summary:\n")
+print(adjusted_constraint_summary)
+
+# save adjusted model results
+write.csv(career_growth_results,
+  here::here("tables", "career_growth_model_results.csv"),
+  row.names = FALSE)
+
+write.csv(promotion_results,
+  here::here("tables", "promotion_model_results.csv"),
+  row.names = FALSE)
+
+write.csv(turnover_results,
+  here::here("tables", "turnover_model_results.csv"),
+  row.names = FALSE)
+
+write.csv(adjusted_constraint_summary,
+  here::here("tables", "adjusted_constraint_summary.csv"),
+  row.names = FALSE)
 
 # [END]
