@@ -25,6 +25,9 @@ minimum_group_size <- 30
 # - 1 Strongly disagree (unfavorable, except stuck 1 favorable)
 # - 5 Strongly agree  (favorable, except stuck 1 unfavorable)
 
+# employee experiences at least two ceiling conditions
+# high_constraint = ceiling_count >= 2
+
 # options ------------------------------------------------------------
 # suppresses informational messages produced by dplyr::summarise()
 # scipen = 999 stop scientific notation for salary data
@@ -340,8 +343,9 @@ if (nrow(unmatched_architecture) > 0) {
   stop("Employee records do not fully match the job architecture")}
 
 
-# prepare job architecture -----------------------------------------------
+# question 1: identify and map structural ceilings -----------------------
 
+# - prepare job architecture
 # - highest_level_order ID highest level available within each job family
 # - employee is at the top of the ladder when level_order == highest_level_order
 
@@ -368,10 +372,10 @@ cat("\nRows after architecture join:", nrow(employees),"\n") # 6000
 # - long time in level defined as 48 months (4 years) or more
 # - 48-month threshold is an assumption and should later be tested 
 #   using alternatives such as 36 and 60 months
-long_time_threshold <- 48
+# long_time_threshold <- 48
 
 # near top of pay band defined as 90% or more
-pay_band_threshold <- 0.90
+# pay_band_threshold <- 0.90
 
 employees <- employees |>
   dplyr::mutate(
@@ -446,7 +450,7 @@ pay_band_exceptions <- employees |>
 cat("\nEmployees outside assigned pay bands:",
   nrow(pay_band_exceptions),"\n") # 209
 
-# question 1 - summarize structural ceilings --------------------------
+# summarize structural ceilings --------------------------
 
 # summarize by job family 
 family_ceiling_summary <- employees |>
@@ -560,7 +564,6 @@ print(family_site_ceiling_summary)
 
 # identify larger comparison groups
 # small groups can produce unstable percentages e.g., 2/4 = 50%
-minimum_group_size <- 30
 family_site_priority <- family_site_ceiling_summary |>
   filter(employees >= minimum_group_size) |>
   arrange(desc(high_constraint_pct))
@@ -577,7 +580,7 @@ write.csv(family_site_priority,
   here::here("tables", "family_site_priority.csv"),
   row.names = FALSE)
 
-# [END]
+
 # question 2: prepare listening survey measures --------------------------
 
 # define survey items used in each measure
@@ -740,10 +743,11 @@ overall_survey_coverage <- analysis_data |>
 cat("\nOverall survey coverage:\n")
 print(overall_survey_coverage) # 92.9
 
-
 # summarize career growth by ceiling status ------------------------------
 
-# compare career-growth sentiment across structural ceiling indicators
+# compare career-growth sentiment by structural ceiling indicators
+
+# compare career-growth sentiment by top of ladder status
 growth_by_top_of_ladder <- analysis_data |>
   dplyr::filter(survey_respondent) |>
   dplyr::group_by(top_of_ladder) |>
@@ -758,7 +762,7 @@ growth_by_top_of_ladder <- analysis_data |>
     career_growth_favorable_pct = round(
       career_growth_favorable_pct, 2))
 
-
+# compare career-growth sentiment by long time in level status
 growth_by_long_time <- analysis_data |>
   dplyr::filter(survey_respondent) |>
   dplyr::group_by(long_time_in_level) |>
@@ -771,7 +775,7 @@ growth_by_long_time <- analysis_data |>
     career_growth_favorable_pct = round(
       career_growth_favorable_pct, 2))
 
-
+# compare career-growth sentiment by pay band position
 growth_by_pay_band <- analysis_data |>
   dplyr::filter(survey_respondent) |>
   dplyr::group_by(near_top_of_pay_band) |>
@@ -785,7 +789,7 @@ growth_by_pay_band <- analysis_data |>
     career_growth_favorable_pct = round(
       career_growth_favorable_pct, 2))
 
-
+# compare career-growth sentiment by high constraint status
 growth_by_constraint <- analysis_data |>
   dplyr::filter(survey_respondent) |>
   dplyr::group_by(high_constraint) |>
@@ -799,8 +803,26 @@ growth_by_constraint <- analysis_data |>
     career_growth_favorable_pct = round(
       career_growth_favorable_pct, 2))
 
-# print career growth comparisons 
 
+# - summarize career growth by number of ceiling conditions 
+# - done to examine if sentiment goes down as employees  
+#   experience more ceiling conditions
+growth_by_ceiling_count <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(ceiling_count) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable,na.rm = TRUE)) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct,
+      1)) |>
+  dplyr::arrange(ceiling_count)
+
+# print career growth comparisons 
 cat("\nCareer growth by top of ladder status:\n")
 print(growth_by_top_of_ladder)
 
@@ -813,3 +835,222 @@ print(growth_by_pay_band)
 cat("\nCareer growth by high constraint status:\n")
 print(growth_by_constraint)
 
+cat("\nCareer growth by number of ceiling conditions:\n")
+print(growth_by_ceiling_count)
+
+# save career growth summaries 
+write.csv(growth_by_top_of_ladder,
+  here::here("tables", "growth_by_top_of_ladder.csv"),
+  row.names = FALSE)
+
+write.csv(growth_by_long_time,
+  here::here("tables", "growth_by_long_time_in_level.csv"),
+  row.names = FALSE)
+
+write.csv(growth_by_pay_band,
+  here::here("tables", "growth_by_pay_band_position.csv"),
+  row.names = FALSE)
+
+write.csv(growth_by_constraint,
+  here::here("tables", "growth_by_high_constraint.csv"),
+  row.names = FALSE)
+
+write.csv(growth_by_ceiling_count,
+  here::here("tables", "growth_by_ceiling_count.csv"),
+  row.names = FALSE)
+
+# summarize career growth by job family ----------------------
+
+# summarize career growth by job family
+growth_by_family <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(job_family) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable, na.rm = TRUE),
+    high_constraint_pct = mean(
+      high_constraint,
+      na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2),
+    high_constraint_pct = round(
+      high_constraint_pct, 2)) |>
+  dplyr::arrange(career_growth_mean)
+
+
+# summarize career growth by worker type
+growth_by_worker_type <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(worker_type) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable, na.rm = TRUE),
+    high_constraint_pct = mean(
+      high_constraint,
+      na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2),
+    high_constraint_pct = round(
+      high_constraint_pct, 2)) |>
+  dplyr::arrange(career_growth_mean)
+
+
+# summarize career growth by site
+growth_by_site <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(site) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable, na.rm = TRUE),
+    high_constraint_pct = mean(
+      high_constraint,
+      na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2),
+    high_constraint_pct = round(
+      high_constraint_pct, 2)) |>
+  dplyr::arrange(career_growth_mean)
+
+cat("\nCareer growth by job family:\n")
+print(growth_by_family)
+
+cat("\nCareer growth by worker type:\n")
+print(growth_by_worker_type)
+
+cat("\nCareer growth by site:\n")
+print(growth_by_site)
+
+# save career growth group summaries
+write.csv(growth_by_family,
+  here::here("tables", "growth_by_family.csv"),
+  row.names = FALSE)
+
+write.csv(growth_by_worker_type,
+  here::here("tables", "growth_by_worker_type.csv"),
+  row.names = FALSE)
+
+write.csv(growth_by_site,
+  here::here("tables", "growth_by_site.csv"),
+  row.names = FALSE)
+
+# summarize career growth by family and site -----------------------------
+
+growth_by_family_site <- analysis_data |>
+  dplyr::filter(survey_respondent) |>
+  dplyr::group_by(site,job_family) |>
+  dplyr::summarise(
+    respondents = dplyr::n(),
+    career_growth_mean = mean(
+      career_growth_score,
+      na.rm = TRUE),
+    career_growth_favorable_pct = mean(
+      career_growth_favorable,
+      na.rm = TRUE),
+    high_constraint_pct = mean(
+      high_constraint,
+      na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    career_growth_mean = round(career_growth_mean, 2),
+    career_growth_favorable_pct = round(
+      career_growth_favorable_pct, 2),
+    high_constraint_pct = round(
+      high_constraint_pct, 2)) |>
+  dplyr::filter(respondents >= minimum_group_size) |>
+  dplyr::arrange(site, career_growth_mean)
+
+cat("\nCareer growth by site and job family:\n")
+print(growth_by_family_site)
+
+write.csv(growth_by_family_site,
+  here::here("tables", "growth_by_family_site.csv"),
+  row.names = FALSE)
+
+
+# promotion and turnover by ceiling status -------------------
+# compare structural ceiling exposure with 2 business outcomes
+# - recent promotion
+# - voluntary turnover
+
+# outcomes by high constraint status
+outcomes_by_constraint <- analysis_data |>
+  dplyr::group_by(high_constraint) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    promoted_n = sum(promoted_last_24mo, na.rm = TRUE),
+    promoted_pct = mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_n = sum(voluntary_turnover, na.rm = TRUE),
+    turnover_pct = mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2))
+
+
+# outcomes by number of ceiling conditions
+outcomes_by_ceiling_count <- analysis_data |>
+  dplyr::group_by(ceiling_count) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    promoted_n = sum(promoted_last_24mo, na.rm = TRUE),
+    promoted_pct = mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_n = sum(voluntary_turnover, na.rm = TRUE),
+    turnover_pct = mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2)) |>
+  dplyr::arrange(ceiling_count)
+
+# print promotion and turnover summaries 
+cat("\nPromotion and turnover by high constraint status:\n")
+print(outcomes_by_constraint)
+
+cat("\nPromotion and turnover by number of ceiling conditions:\n")
+print(outcomes_by_ceiling_count)
+
+# summarize outcomes by individual ceiling measures ----------------------
+
+outcomes_by_top_of_ladder <- analysis_data |>
+  dplyr::group_by(top_of_ladder) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    promoted_pct = mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_pct = mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2))
+
+
+outcomes_by_long_time <- analysis_data |>
+  dplyr::group_by(long_time_in_level) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    promoted_pct = mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_pct = mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2))
+
+
+outcomes_by_pay_band <- analysis_data |>
+  dplyr::group_by(near_top_of_pay_band) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    promoted_pct = mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_pct = mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2))
+
+
+# [END]
