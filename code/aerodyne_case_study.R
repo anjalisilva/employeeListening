@@ -1677,6 +1677,114 @@ equity_outcome_summary <- dplyr::bind_rows(
 cat("\nEquity outcomes by demographic group:\n")
 print(equity_outcome_summary)
 
+# adjust structural ceiling exposure for workforce composition ----------
+equity_constraint_model <- stats::glm(
+  high_constraint ~
+    gender +
+    age_band +
+    worker_type +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    site,
+  data = analysis_data,
+  family = stats::binomial())
+
+
+# extract adjusted demographic ceiling results
+equity_constraint_results <- broom::tidy(
+  equity_constraint_model,
+  conf.int = TRUE,
+  exponentiate = TRUE) |>
+  dplyr::filter(
+    grepl("^gender", term) |
+    grepl("^age_band", term)) |>
+  dplyr::mutate(
+    demographic_group = dplyr::case_when(
+      grepl("^gender", term) ~ "Gender",
+      grepl("^age_band", term) ~ "Age band"),
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2))) |>
+  dplyr::select(
+    demographic_group,
+    term,
+    estimate,
+    conf.low,
+    conf.high,
+    p.value)
+
+cat("\nAdjusted structural constraint odds by demographic group:\n")
+print(equity_constraint_results)
+
+# assess demographic differences in promotion ---------------------------
+
+equity_promotion_model <- stats::glm(
+  promoted_last_24mo ~
+    gender +
+    age_band +
+    high_constraint +
+    tenure_years +
+    performance_rating +
+    manager_flag +
+    site +
+    job_family,
+  data = analysis_data,
+  family = stats::binomial())
+
+
+# extract adjusted demographic promotion results
+equity_promotion_results <- broom::tidy(
+  equity_promotion_model,
+  conf.int = TRUE,
+  exponentiate = TRUE) |>
+  dplyr::filter(
+    grepl("^gender", term) |
+      grepl("^age_band", term)) |>
+  dplyr::mutate(
+    demographic_group = dplyr::case_when(
+      grepl("^gender", term) ~ "Gender",
+      grepl("^age_band", term) ~ "Age band"),
+    dplyr::across(
+      c(estimate, std.error, conf.low, conf.high, p.value),
+      ~ round(.x, 2))) |>
+  dplyr::select(
+    demographic_group,
+    term,
+    estimate,
+    conf.low,
+    conf.high,
+    p.value)
+
+cat("\nAdjusted promotion odds by demographic group:\n")
+print(equity_promotion_results)
+# genderMale;     1.24     1.05      1.47    0.01
+# age_band40-49; 1.29     1.05      1.59    0.02
+
+# review model reference groups ------------------------------------------
+
+cat("\nGender reference group and levels:\n")
+print(levels(analysis_data$gender))
+
+cat("\nAge band reference group and levels:\n")
+print(levels(analysis_data$age_band))
+
+
+# save question 3 tables 
+write.csv(equity_outcome_summary,
+  here::here("tables",
+  "question3_table1_equity_outcome_summary.csv"),
+  row.names = FALSE)
+
+write.csv(equity_constraint_results,
+  here::here("tables",
+  "question3_table2_adjusted_constraint_results.csv"),
+  row.names = FALSE)
+
+write.csv(equity_promotion_results,
+  here::here("tables",
+  "question3_table3_adjusted_promotion_results.csv"),
+  row.names = FALSE)
 
 #####END ####
 # [END]
