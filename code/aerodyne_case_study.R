@@ -1,23 +1,23 @@
 # Aerodyne employee listening and job architecture case study
-# Senior Research Data Scientist candidate analysis
 #
 # Author: Anjali Silva
 #
 # Purpose
-# Investigate where employees experience structural career ceilings and assess
-# how these conditions relate to career-growth sentiment, promotion and turnover
+# Investigate where employees experience structural career 
+# ceilings and assess how these conditions relate to career-growth
+# sentiment, promotion and turnover
 #
 # Data
 # Case Dataset Aerodyne.xlsx
 # Employees, Job_Architecture and Listening_Survey tabs
 #
 # Output
-# Reproducible summary tables saved to the tables folder
-# Figures for the final presentation saved to the figures folder
+# Reproducible summary tables saved to tables folder
+# Figures saved to figures folder
 #
 # Analysis date: 17 July 2026
 
-# packages ------------------------------------------------------------
+# R dependency packages ------------------------------------------------------------
   
 library(readxl)
 library(dplyr)
@@ -1603,6 +1603,79 @@ write.csv(career_growth_model_comparison,
 write.csv(structure_estimate_comparison,
   here::here("tables", "question2_table29_structure_estimate_comparison.csv"),
   row.names = FALSE)
+
+# question 3: assess equity exposure and outcomes ------------------------
+# summarize equity outcomes by gender
+equity_by_gender <- analysis_data |>
+  dplyr::group_by(gender) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    high_constraint_n = sum(high_constraint, na.rm = TRUE),
+    high_constraint_pct = mean(high_constraint, na.rm = TRUE) * 100,
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    promoted_n = sum(promoted_last_24mo, na.rm = TRUE),
+    promoted_pct = mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_n = sum(voluntary_turnover, na.rm = TRUE),
+    turnover_pct = mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    group_type = "Gender",
+    high_constraint_pct = round(high_constraint_pct, 2),
+    career_growth_mean = round(career_growth_mean, 2),
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2)) |>
+  dplyr::select(
+    group_type,
+    group = gender,
+    employees,
+    high_constraint_n,
+    high_constraint_pct,
+    career_growth_mean,
+    promoted_n,
+    promoted_pct,
+    turnover_n,
+    turnover_pct)
+
+# summarize equity outcomes by age band ------------------------
+equity_by_age_band <- analysis_data |>
+  dplyr::group_by(age_band) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    high_constraint_n = sum(high_constraint, na.rm = TRUE),
+    high_constraint_pct = mean(high_constraint, na.rm = TRUE) * 100,
+    career_growth_mean = mean(career_growth_score, na.rm = TRUE),
+    promoted_n = sum(promoted_last_24mo, na.rm = TRUE),
+    promoted_pct = mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_n = sum(voluntary_turnover, na.rm = TRUE),
+    turnover_pct = mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::mutate(
+    group_type = "Age band",
+    high_constraint_pct = round(high_constraint_pct, 2),
+    career_growth_mean = round(career_growth_mean, 2),
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2)) |>
+  dplyr::select(
+    group_type,
+    group = age_band,
+    employees,
+    high_constraint_n,
+    high_constraint_pct,
+    career_growth_mean,
+    promoted_n,
+    promoted_pct,
+    turnover_n,
+    turnover_pct)
+
+# combine demographic summaries
+equity_outcome_summary <- dplyr::bind_rows(
+  equity_by_gender,
+  equity_by_age_band) |>
+  dplyr::filter(employees >= minimum_group_size) |>
+  dplyr::arrange(
+    group_type,
+    dplyr::desc(high_constraint_pct))
+
+cat("\nEquity outcomes by demographic group:\n")
+print(equity_outcome_summary)
 
 
 #####END ####
