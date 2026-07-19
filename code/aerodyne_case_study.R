@@ -1,5 +1,3 @@
-# Anjali Silva
-# 17 July 2026
 
 # packages ------------------------------------------------------------
   
@@ -526,15 +524,15 @@ print(site_ceiling_summary |>
 
 # save structural ceiling summaries
 write.csv(family_ceiling_summary,
-  here::here("tables", "family_ceiling_summary.csv"),
+  here::here("tables", "question1_table1_family_ceiling_summary.csv"),
   row.names = FALSE)
 
 write.csv(worker_type_ceiling_summary,
-  here::here("tables", "worker_type_ceiling_summary.csv"),
+  here::here("tables", "question1_table2_worker_type_ceiling_summary.csv"),
   row.names = FALSE)
 
 write.csv(site_ceiling_summary,
-  here::here("tables", "site_ceiling_summary.csv"),
+  here::here("tables", "question1_table3_site_ceiling_summary.csv"),
   row.names = FALSE)
 
 # summarize ceilings by job family and site -------------------------------
@@ -575,11 +573,11 @@ print(family_site_priority)
 
 # save family and site summaries 
 write.csv(family_site_ceiling_summary,
-  here::here("tables", "family_site_ceiling_summary.csv"),
+  here::here("tables", "question1_table4_family_site_ceiling_summary.csv"),
   row.names = FALSE)
 
 write.csv(family_site_priority,
-  here::here("tables", "family_site_priority.csv"),
+  here::here("tables", "question1_table5_family_site_priority.csv"),
   row.names = FALSE)
 
 
@@ -722,15 +720,15 @@ print(survey_coverage_site)
 
 # save survey coverage summaries
 write.csv(survey_coverage_family,
-          here::here("tables", "survey_coverage_family.csv"),
+          here::here("tables", "question2_table1_survey_coverage_family.csv"),
           row.names = FALSE)
 
 write.csv(survey_coverage_worker_type,
-          here::here("tables", "survey_coverage_worker_type.csv"),
+          here::here("tables", "question2_table2_survey_coverage_worker_type.csv"),
           row.names = FALSE)
 
 write.csv(survey_coverage_site,
-          here::here("tables", "survey_coverage_site.csv"),
+          here::here("tables", "question2_table3_survey_coverage_site.csv"),
           row.names = FALSE)
 
 # calculate overall survey response rate ---------------------------------
@@ -842,23 +840,23 @@ print(growth_by_ceiling_count)
 
 # save career growth summaries 
 write.csv(growth_by_top_of_ladder,
-  here::here("tables", "growth_by_top_of_ladder.csv"),
+  here::here("tables", "question2_table4_growth_by_top_of_ladder.csv"),
   row.names = FALSE)
 
 write.csv(growth_by_long_time,
-  here::here("tables", "growth_by_long_time_in_level.csv"),
+  here::here("tables", "question2_table5_growth_by_long_time_in_level.csv"),
   row.names = FALSE)
 
 write.csv(growth_by_pay_band,
-  here::here("tables", "growth_by_pay_band_position.csv"),
+  here::here("tables", "question2_table6_growth_by_pay_band_position.csv"),
   row.names = FALSE)
 
 write.csv(growth_by_constraint,
-  here::here("tables", "growth_by_high_constraint.csv"),
+  here::here("tables", "question2_table7_growth_by_high_constraint.csv"),
   row.names = FALSE)
 
 write.csv(growth_by_ceiling_count,
-  here::here("tables", "growth_by_ceiling_count.csv"),
+  here::here("tables", "question2_table8_growth_by_ceiling_count.csv"),
   row.names = FALSE)
 
 # summarize career growth by job family ----------------------
@@ -936,15 +934,15 @@ print(growth_by_site)
 
 # save career growth group summaries
 write.csv(growth_by_family,
-  here::here("tables", "growth_by_family.csv"),
+  here::here("tables", "question2_table9_growth_by_family.csv"),
   row.names = FALSE)
 
 write.csv(growth_by_worker_type,
-  here::here("tables", "growth_by_worker_type.csv"),
+  here::here("tables", "question2_table10_growth_by_worker_type.csv"),
   row.names = FALSE)
 
 write.csv(growth_by_site,
-  here::here("tables", "growth_by_site.csv"),
+  here::here("tables", "question2_table11_growth_by_site.csv"),
   row.names = FALSE)
 
 # summarize career growth by family and site -----------------------------
@@ -976,7 +974,7 @@ cat("\nCareer growth by site and job family:\n")
 print(growth_by_family_site)
 
 write.csv(growth_by_family_site,
-  here::here("tables", "growth_by_family_site.csv"),
+  here::here("tables", "question2_table12_growth_by_family_site.csv"),
   row.names = FALSE)
 
 
@@ -1065,23 +1063,23 @@ print(outcomes_by_pay_band)
 
 # save promotion and turnover summaries
 write.csv(outcomes_by_constraint,
-  here::here("tables", "outcomes_by_high_constraint.csv"),
+  here::here("tables", "question2_table13_outcomes_by_high_constraint.csv"),
   row.names = FALSE)
 
 write.csv(outcomes_by_ceiling_count,
-  here::here("tables", "outcomes_by_ceiling_count.csv"),
+  here::here("tables", "question2_table14_outcomes_by_ceiling_count.csv"),
   row.names = FALSE)
 
 write.csv(outcomes_by_top_of_ladder,
-  here::here("tables", "outcomes_by_top_of_ladder.csv"),
+  here::here("tables", "question2_table15_outcomes_by_top_of_ladder.csv"),
   row.names = FALSE)
 
 write.csv(outcomes_by_long_time,
-  here::here("tables", "outcomes_by_long_time_in_level.csv"),
+  here::here("tables", "question2_table16_outcomes_by_long_time_in_level.csv"),
   row.names = FALSE)
 
 write.csv(outcomes_by_pay_band,
-  here::here("tables", "outcomes_by_pay_band_position.csv"),
+  here::here("tables", "question2_table17_outcomes_by_pay_band_position.csv"),
   row.names = FALSE)
 
 # adjust outcome models ------------------------------------
@@ -1235,19 +1233,19 @@ print(adjusted_constraint_summary)
 
 # save adjusted model results
 write.csv(career_growth_results,
-  here::here("tables", "career_growth_model_results.csv"),
+  here::here("tables", "question2_table18_career_growth_model_results.csv"),
   row.names = FALSE)
 
 write.csv(promotion_results,
-  here::here("tables", "promotion_model_results.csv"),
+  here::here("tables", "question2_table19_promotion_model_results.csv"),
   row.names = FALSE)
 
 write.csv(turnover_results,
-  here::here("tables", "turnover_model_results.csv"),
+  here::here("tables", "question2_table20_turnover_model_results.csv"),
   row.names = FALSE)
 
 write.csv(adjusted_constraint_summary,
-  here::here("tables", "adjusted_constraint_summary.csv"),
+  here::here("tables", "question2_table21_adjusted_constraint_summary.csv"),
   row.names = FALSE)
 
 # compare individual ceiling measures ------------------------
@@ -1399,22 +1397,22 @@ print(ceiling_component_summary)
 
 write.csv(
   career_growth_component_results,
-  here::here("tables", "career_growth_ceiling_components.csv"),
+  here::here("tables", "question2_table22_career_growth_ceiling_components.csv"),
   row.names = FALSE)
 
 write.csv(
   promotion_component_results,
-  here::here("tables", "promotion_ceiling_components.csv"),
+  here::here("tables", "question2_table23_promotion_ceiling_components.csv"),
   row.names = FALSE)
 
 write.csv(
   turnover_component_results,
-  here::here("tables", "turnover_ceiling_components.csv"),
+  here::here("tables", "question2_table24_turnover_ceiling_components.csv"),
   row.names = FALSE)
 
 write.csv(
   ceiling_component_summary,
-  here::here("tables", "ceiling_component_summary.csv"),
+  here::here("tables", "question2_table25_ceiling_component_summary.csv"),
   row.names = FALSE)
 
 
@@ -1573,19 +1571,21 @@ print(structure_estimate_comparison)
 
 # save structure and manager support results 
 write.csv(manager_support_result,
-  here::here("tables", "manager_support_result.csv"),
+  here::here("tables", "question2_table26_manager_support_result.csv"),
   row.names = FALSE)
 
 write.csv(structure_manager_results,
-  here::here("tables", "structure_manager_results.csv"),
+  here::here("tables", "question2_table27_structure_manager_results.csv"),
   row.names = FALSE)
 
 write.csv(career_growth_model_comparison,
-  here::here("tables", "career_growth_model_comparison.csv"),
+  here::here("tables", "question2_table28_career_growth_model_comparison.csv"),
   row.names = FALSE)
 
 write.csv(structure_estimate_comparison,
-  here::here("tables", "structure_estimate_comparison.csv"),
+  here::here("tables", "question2_table29_structure_estimate_comparison.csv"),
   row.names = FALSE)
 
+
+#####END ####
 # [END]
