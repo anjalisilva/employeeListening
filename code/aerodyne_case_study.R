@@ -1,3 +1,21 @@
+# Aerodyne employee listening and job architecture case study
+# Senior Research Data Scientist candidate analysis
+#
+# Author: Anjali Silva
+#
+# Purpose
+# Investigate where employees experience structural career ceilings and assess
+# how these conditions relate to career-growth sentiment, promotion and turnover
+#
+# Data
+# Case Dataset Aerodyne.xlsx
+# Employees, Job_Architecture and Listening_Survey tabs
+#
+# Output
+# Reproducible summary tables saved to the tables folder
+# Figures for the final presentation saved to the figures folder
+#
+# Analysis date: 17 July 2026
 
 # packages ------------------------------------------------------------
   
