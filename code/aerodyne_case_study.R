@@ -26,6 +26,8 @@ library(here)
 library(broom)
 library(stats)
 library(psych)
+library(ggplot2)
+library(tidyr)
 
 # assumptions ----------------------------------------------------------
 
@@ -599,6 +601,93 @@ write.csv(family_site_priority,
   here::here("tables", "question1_table5_family_site_priority.csv"),
   row.names = FALSE)
 
+# create structural bottleneck visual ------------------------------------
+
+# show most constrained job families and how ceilings appear
+bottleneck_plot_data <- family_ceiling_summary |>
+  dplyr::slice_max(
+  order_by = high_constraint_pct,
+  n = 8,
+  with_ties = FALSE) |>
+  dplyr::mutate(
+    job_family_label = paste0(
+      tools::toTitleCase(job_family),
+      " (", levels_in_family, " levels)")) |>
+  dplyr::select(
+    job_family_label,
+    top_of_ladder_pct,
+    long_time_pct,
+    near_band_top_pct,
+    high_constraint_pct) |>
+  tidyr::pivot_longer(
+    cols = c(
+      top_of_ladder_pct,
+      long_time_pct,
+      near_band_top_pct,
+      high_constraint_pct),
+    names_to = "ceiling_measure",
+    values_to = "percent") |>
+  dplyr::mutate(
+    ceiling_measure = dplyr::case_when(
+      ceiling_measure == "top_of_ladder_pct" ~ "Top of ladder",
+      ceiling_measure == "long_time_pct" ~ "Long time in level",
+      ceiling_measure == "near_band_top_pct" ~ "Near pay-band max",
+      ceiling_measure == "high_constraint_pct" ~ "High constraint"),
+    ceiling_measure = factor(
+      ceiling_measure,
+      levels = c(
+        "Top of ladder",
+        "Long time in level",
+        "Near pay-band max",
+        "High constraint")),
+    job_family_label = factor(
+      job_family_label,
+      levels = rev(unique(job_family_label))),
+    percent_label = paste0(round(percent, 2), "%"))
+
+
+# heatmap of ceiling prevalence by job family
+bottleneck_heatmap <- ggplot2::ggplot(
+  bottleneck_plot_data,
+  aes(
+    x = ceiling_measure,
+    y = job_family_label,
+    fill = percent)) +
+  ggplot2::geom_tile(
+    color = "white",
+    linewidth = 0.7) +
+  ggplot2::geom_text(
+    aes(label = percent_label),
+    size = 3.0) +
+  ggplot2::scale_fill_gradient(
+    low = "white",
+    high = "#3333B3",
+    name = "% employees") +
+  ggplot2::labs(
+    title = "Structural ceiling prevalence by job family",
+    subtitle = "Top 8 job families ranked by high structural constraint",
+    x = NULL,
+    y = NULL) +
+  ggplot2::theme_minimal(base_size = 10) +
+  ggplot2::theme(
+    plot.title = element_text(face = "bold", size = 12),
+    plot.subtitle = element_text(size = 9),
+    axis.text.x = element_text(size = 8, angle = 25, hjust = 1),
+    axis.text.y = element_text(size = 8),
+    panel.grid = element_blank(),
+    legend.position = "right",
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 7))
+
+
+# save bottleneck visual
+ggplot2::ggsave(
+  filename = here::here("figures",
+    "question1_figure1_structural_bottleneck_heatmap.png"),
+  plot = bottleneck_heatmap,
+  width = 8.5,
+  height = 4.8,
+  dpi = 300)
 
 # question 2: prepare listening survey measures --------------------------
 
