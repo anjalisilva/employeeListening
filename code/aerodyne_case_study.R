@@ -601,9 +601,9 @@ write.csv(family_site_priority,
   here::here("tables", "question1_table5_family_site_priority.csv"),
   row.names = FALSE)
 
-# create structural bottleneck visual ------------------------------------
+# create structural bottleneck visual - heatmap -------------------------------
 
-# show most constrained job families and how ceilings appear
+# show most constrained job families and ceilings
 bottleneck_plot_data <- family_ceiling_summary |>
   dplyr::slice_max(
   order_by = high_constraint_pct,
@@ -688,6 +688,144 @@ ggplot2::ggsave(
   width = 8.5,
   height = 4.8,
   dpi = 300)
+
+
+# visualize structural bottlenecks by job family ------
+# prep data for plotting
+bottleneck_bar_data <- family_ceiling_summary |>
+  dplyr::arrange(
+    dplyr::desc(high_constraint_pct)) |>
+  dplyr::mutate(
+    job_family_label = dplyr::case_when(
+      job_family == "maintenance & mro" ~
+        "Maintenance & MRO",
+      job_family == "manufacturing/production tech" ~
+        "Manufacturing/Production Tech",
+      TRUE ~ tools::toTitleCase(job_family)),
+    job_family_label = paste0(
+      job_family_label,
+      " (", levels_in_family," levels)"),
+    # pilot selection uses prevalence and ladder length
+    priority_group = dplyr::case_when(
+      high_constraint_pct >= overall_constraint_pct &
+        levels_in_family == 3 ~
+        "Pilot priority",
+      high_constraint_pct >= overall_constraint_pct &
+        levels_in_family > 3 ~
+        "Secondary review",
+      TRUE ~"Other job families"),
+    job_family_label = factor(
+      job_family_label,
+      levels = rev(job_family_label)),
+    percent_label = paste0(
+      round(high_constraint_pct, 2), "%"))
+
+
+# create horizontal bar chart
+structural_bottleneck_bar_chart <- ggplot2::ggplot(
+  bottleneck_bar_data,
+  ggplot2::aes(
+    x = job_family_label,
+    y = high_constraint_pct,
+    fill = priority_group)) +
+  ggplot2::geom_col(
+    width = 0.70) +
+  ggplot2::geom_text(
+    ggplot2::aes(label = percent_label),
+    hjust = -0.12,
+    size = 3.0) +
+  ggplot2::coord_flip(
+    clip = "off") +
+  
+  # original blue, color-blind friendly orange and neutral gray
+  ggplot2::scale_fill_manual(
+    values = c(
+      "Pilot priority" = "#E69F00",
+      "Secondary review" = "#999999",
+      "Other job families" = "#3333B3"),
+    breaks = c(
+      "Pilot priority",
+      "Secondary review",
+      "Other job families")) +
+  
+  ggplot2::scale_y_continuous(
+    limits = c(
+      0,
+      max(bottleneck_bar_data$high_constraint_pct) + 4),
+    breaks = seq(0, 25, by = 5),
+    labels = function(x) paste0(x, "%"),
+    expand = ggplot2::expansion(
+      mult = c(0, 0.02))) +
+  
+  ggplot2::labs(
+    title = "Structural ceiling prevalence by job family",
+    subtitle = paste0(
+      "Pilot priority combines above-average constraint with ",
+      "the shortest three-level career ladders"),
+    x = NULL,
+    y = "Employees meeting high-constraint definition",
+    fill = NULL,
+    caption = paste0(
+      "Overall high-constraint rate = ",
+      round(overall_constraint_pct, 2),
+      "%. High constraint = at least 2 of 3 conditions: ",
+      "top of ladder, 48+ months in level, or 90%+ of pay band")) +
+  
+  ggplot2::theme_minimal(
+    base_size = 10) +
+  
+  ggplot2::theme(
+    plot.title = ggplot2::element_text(
+      face = "bold",
+      size = 13),
+    
+    plot.subtitle = ggplot2::element_text(
+      size = 9),
+    
+    plot.caption = ggplot2::element_text(
+      size = 7,
+      hjust = 0),
+    
+    axis.title.x = ggplot2::element_text(
+      size = 9),
+    
+    axis.text.x = ggplot2::element_text(
+      size = 8),
+    
+    axis.text.y = ggplot2::element_text(
+      size = 8),
+    
+    panel.grid.major.y =
+      ggplot2::element_blank(),
+    
+    panel.grid.minor =
+      ggplot2::element_blank(),
+    
+    legend.position = "bottom",
+    
+    legend.text = ggplot2::element_text(
+      size = 8),
+    
+    plot.margin = ggplot2::margin(
+      t = 6,
+      r = 24,
+      b = 6,
+      l = 6))
+
+
+print(structural_bottleneck_bar_chart)
+
+
+ggplot2::ggsave(
+  filename = here::here(
+    "figures",
+    "question1_figure2_structural_bottlenecks_by_job_family.png"),
+  plot = structural_bottleneck_bar_chart,
+  width = 8.5,
+  height = 5.2,
+  units = "in",
+  dpi = 300,
+  bg = "white")
 
 # question 2: prepare listening survey measures --------------------------
 
