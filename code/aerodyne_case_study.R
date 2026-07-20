@@ -25,6 +25,7 @@ library(janitor)
 library(here)
 library(broom)
 library(stats)
+library(psych)
 
 # assumptions ----------------------------------------------------------
 
@@ -604,6 +605,33 @@ write.csv(family_site_priority,
 # define survey items used in each measure
 career_growth_items <- c("grow_1", "grow_2", "grow_3")
 engagement_items <- c("eng_1", "eng_2")
+
+# assess internal consistency of career-growth items 
+career_growth_alpha <- psych::alpha(
+  listening_survey |>
+    dplyr::select(dplyr::all_of(career_growth_items)),
+  check.keys = FALSE,
+  warnings = FALSE,
+  use = "pairwise")
+
+career_growth_reliability <- data.frame(
+  measure = "Career growth",
+  items = paste(career_growth_items, collapse = ", "),
+  n_items = length(career_growth_items),
+  cronbach_alpha = round(
+    career_growth_alpha$total$raw_alpha, 2),
+  standardized_alpha = round(
+    career_growth_alpha$total$std.alpha, 2))
+
+cat("\nCareer-growth scale reliability:\n")
+print(career_growth_reliability)
+# Cronbach’s alpha of 0.84 suggests 3 items are related
+# enough to be combined into one career-growth score
+
+write.csv(career_growth_reliability,
+  here::here("tables",
+  "question2_table0_career_growth_reliability.csv"),
+  row.names = FALSE)
 
 # create survey measures
 listening_survey <- listening_survey |>
@@ -1718,7 +1746,6 @@ cat("\nAdjusted structural constraint odds by demographic group:\n")
 print(equity_constraint_results)
 
 # assess demographic differences in promotion ---------------------------
-
 equity_promotion_model <- stats::glm(
   promoted_last_24mo ~
     gender +
@@ -1769,7 +1796,6 @@ print(levels(analysis_data$gender))
 cat("\nAge band reference group and levels:\n")
 print(levels(analysis_data$age_band))
 
-
 # save question 3 tables 
 write.csv(equity_outcome_summary,
   here::here("tables",
@@ -1786,5 +1812,126 @@ write.csv(equity_promotion_results,
   "question3_table3_adjusted_promotion_results.csv"),
   row.names = FALSE)
 
-#####END ####
-# [END]
+# question 4: sensitivity analysis and action priorities ----------------
+
+# define:               time         pay-band threshold
+# Less restrictive      36 months     85% 
+# Primary               48 months     90% 
+# More restrictive      60 months     95% 
+  
+# test alternate ceiling thresholds
+sensitivity_thresholds <- data.frame(
+  scenario = c(
+    "Less restrictive",
+    "Primary definition",
+    "More restrictive"),
+  long_time_months = c(36, 48, 60),
+  pay_band_cutoff = c(0.85, 0.90, 0.95))
+
+# calculate high constraint under each scenario
+sensitivity_results <- sensitivity_thresholds |>
+  dplyr::rowwise() |>
+  dplyr::mutate(
+    employees = nrow(analysis_data),
+    high_constraint_n = sum(
+      (as.integer(analysis_data$top_of_ladder) +
+          dplyr::coalesce(
+            as.integer(
+              analysis_data$time_in_level_months >= long_time_months), 0L) +
+          dplyr::coalesce(
+            as.integer(
+              analysis_data$pay_band_position >= pay_band_cutoff), 0L)) >= 2,
+      na.rm = TRUE),
+    
+    high_constraint_pct =
+      high_constraint_n / employees * 100) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    high_constraint_pct = round(high_constraint_pct, 2))
+
+cat("\nSensitivity of high constraint definition:\n")
+print(sensitivity_results)
+
+# identify priority job families -----------------------------------------
+priority_family_summary <- analysis_data |>
+  dplyr::group_by(job_family) |>
+  dplyr::summarise(
+    employees = dplyr::n(),
+    levels_in_family = dplyr::first(levels_in_family),
+    high_constraint_pct =
+      mean(high_constraint, na.rm = TRUE) * 100,
+    career_growth_mean =
+      mean(career_growth_score, na.rm = TRUE),
+    promoted_pct =
+      mean(promoted_last_24mo, na.rm = TRUE) * 100,
+    turnover_pct =
+      mean(voluntary_turnover, na.rm = TRUE) * 100) |>
+  dplyr::filter(employees >= minimum_group_size) |>
+  dplyr::mutate(
+    high_constraint_pct = round(high_constraint_pct, 2),
+    career_growth_mean = round(career_growth_mean, 2),
+    promoted_pct = round(promoted_pct, 2),
+    turnover_pct = round(turnover_pct, 2)) |>
+  dplyr::arrange(
+    dplyr::desc(high_constraint_pct),
+    career_growth_mean)
+
+cat("\nPriority job families:\n")
+print(priority_family_summary)
+
+# flag job families for targeted action ---------------------------------
+
+# - a family is classified as High priority
+#    - above-median structural constraint
+#    - below-median career-growth sentiment
+#    - above-median voluntary turnover
+
+# - a family is classified as Review 
+#    - when at least one major concern is present
+
+# - a family is classified as Monitor
+#    - when available indicators do not show a strong concern
+
+priority_family_summary <- priority_family_summary |>
+  dplyr::mutate(
+    action_priority = dplyr::case_when(
+      high_constraint_pct >=
+        median(high_constraint_pct, na.rm = TRUE) &
+        career_growth_mean <=
+        median(career_growth_mean, na.rm = TRUE) &
+        turnover_pct >=
+        median(turnover_pct, na.rm = TRUE) ~
+        "High priority",
+      
+      high_constraint_pct >=
+        median(high_constraint_pct, na.rm = TRUE) |
+        career_growth_mean <=
+        median(career_growth_mean, na.rm = TRUE) ~
+        "Review", TRUE ~ "Monitor")) |>
+  dplyr::arrange(
+    factor(
+      action_priority,
+      levels = c(
+        "High priority",
+        "Review",
+        "Monitor")),
+    dplyr::desc(high_constraint_pct))
+
+cat("\nRecommended action priority by job family:\n")
+print(priority_family_summary)
+
+
+# save question 4 tables 
+write.csv(sensitivity_results,
+  here::here("tables",
+  "question4_table1_threshold_sensitivity.csv"),
+  row.names = FALSE)
+
+write.csv(priority_family_summary,
+  here::here("tables",
+  "question4_table2_priority_family_summary.csv"),
+  row.names = FALSE)
+
+
+# end of script ---------------------------------
+
