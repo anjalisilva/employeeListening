@@ -786,7 +786,7 @@ structural_bottleneck_bar_chart <- ggplot2::ggplot(
     caption = paste0(
       "Overall high-constraint rate = ",
       sprintf("%.2f", overall_constraint_pct),
-      "%. High constraint = at least 2 of 3 conditions: ",
+      "% (n = 6,000). High constraint = at least 2 of 3 conditions: ",
       "top of ladder, 48+ months in level, or 90%+ of pay band.")) +
   ggplot2::theme_minimal(
     base_size = 10) +
