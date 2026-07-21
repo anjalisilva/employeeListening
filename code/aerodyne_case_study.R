@@ -863,8 +863,10 @@ structural_bottleneck_bar_chart <- ggplot2::ggplot(
       l = 6))
 
 
-# display chart
-print(structural_bottleneck_bar_chart)
+# display chart only during an interactive R session
+if (interactive()) {
+  print(structural_bottleneck_bar_chart)
+}
 
 if (save_figures) {
   # save chart
