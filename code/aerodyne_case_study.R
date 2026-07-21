@@ -18,7 +18,7 @@
 # Analysis date: 17 July 2026
 
 # R dependency packages ------------------------------------------------------------
-  
+
 library(readxl)
 library(dplyr)
 library(janitor)
@@ -28,6 +28,14 @@ library(stats)
 library(psych)
 library(ggplot2)
 library(tidyr)
+
+# User inputs ------------------------------------------------------------
+
+# ask whether CSV tables should be saved; default is no
+save_tables_input <- readline(
+  prompt = "Save tables to the tables folder? Type Yes or press Enter for No: ")
+
+save_tables <- tolower(trimws(save_tables_input)) == "yes"
 
 # assumptions ----------------------------------------------------------
 
@@ -55,7 +63,7 @@ minimum_group_size <- 30
 options(dplyr.summarise.inform = FALSE, na.action = "na.exclude", scipen = 999)
 
 # define workbook path ------------------------------------------------
-  
+
 workbook_path <- here::here(
   "data",
   "Case Dataset Aerodyne.xlsx")
@@ -83,9 +91,9 @@ missing_sheets <- setdiff(
 if (length(missing_sheets) > 0) {
   stop("Missing workbook tabs: ", 
        paste(missing_sheets, collapse = ", ")
-)} else {
-  cat("All 5 required workbook tabs are present:\n",
-  paste(available_sheets, collapse = "\n"),"\n")}
+  )} else {
+    cat("All 5 required workbook tabs are present:\n",
+        paste(available_sheets, collapse = "\n"),"\n")}
 
 # read workbook content 
 readme <- readxl::read_excel(
@@ -263,8 +271,8 @@ dplyr::glimpse(employee_ranges)
 # finds min and max for every survey column except employee_id
 survey_ranges <- listening_survey_raw |>
   dplyr::summarise(dplyr::across(-employee_id,
-      list(minimum = ~ min(.x, na.rm = TRUE),
-          maximum = ~ max(.x, na.rm = TRUE))))
+                                 list(minimum = ~ min(.x, na.rm = TRUE),
+                                      maximum = ~ max(.x, na.rm = TRUE))))
 cat("\nSurvey response ranges:\n")
 dplyr::glimpse(survey_ranges)
 
@@ -353,10 +361,10 @@ print(family_count_check)
 # employee records without a matching record in job-architecture table
 unmatched_architecture <- employees |>
   dplyr::anti_join(job_architecture,
-    by = c("job_family","job_level" = "level_code")) 
+                   by = c("job_family","job_level" = "level_code")) 
 
 cat("\nEmployees without a matching job architecture record:",
-  nrow(unmatched_architecture),"\n")
+    nrow(unmatched_architecture),"\n")
 
 # stop analysis if any employee records do not match
 if (nrow(unmatched_architecture) > 0) {
@@ -375,7 +383,7 @@ if (nrow(unmatched_architecture) > 0) {
 job_architecture <- job_architecture |>
   dplyr::group_by(job_family) |>
   dplyr::mutate(highest_level_order = max(level_order, na.rm = TRUE),
-         levels_in_family = n_distinct(level_code)) |> 
+                levels_in_family = n_distinct(level_code)) |> 
   dplyr::ungroup()
 
 
@@ -384,7 +392,7 @@ job_architecture <- job_architecture |>
 # left_join() because it keep all employees and adds the matching architecture fields
 employees <- employees |>
   dplyr::left_join(job_architecture,
-  by = c("job_family","job_level" = "level_code"))
+                   by = c("job_family","job_level" = "level_code"))
 cat("\nRows after architecture join:", nrow(employees),"\n") # 6000
 
 # create structural ceiling measures -------------------------------------
@@ -466,10 +474,10 @@ print(summary(employees$pay_band_position))
 # check salary values outside assigned pay bands 
 pay_band_exceptions <- employees |>
   filter(!is.na(pay_band_position),
-          pay_band_position < 0 | pay_band_position > 1)
+         pay_band_position < 0 | pay_band_position > 1)
 
 cat("\nEmployees outside assigned pay bands:",
-  nrow(pay_band_exceptions),"\n") # 209
+    nrow(pay_band_exceptions),"\n") # 209
 
 # summarize structural ceilings --------------------------
 
@@ -544,17 +552,23 @@ print(site_ceiling_summary |>
         arrange(desc(employees)))
 
 # save structural ceiling summaries
-write.csv(family_ceiling_summary,
-  here::here("tables", "question1_table1_family_ceiling_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(family_ceiling_summary,
+            here::here("tables", "question1_table1_family_ceiling_summary.csv"),
+            row.names = FALSE)
+}
 
-write.csv(worker_type_ceiling_summary,
-  here::here("tables", "question1_table2_worker_type_ceiling_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(worker_type_ceiling_summary,
+            here::here("tables", "question1_table2_worker_type_ceiling_summary.csv"),
+            row.names = FALSE)
+}
 
-write.csv(site_ceiling_summary,
-  here::here("tables", "question1_table3_site_ceiling_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(site_ceiling_summary,
+            here::here("tables", "question1_table3_site_ceiling_summary.csv"),
+            row.names = FALSE)
+}
 
 # summarize ceilings by job family and site -------------------------------
 
@@ -593,22 +607,26 @@ cat("\nHighest constraint site and family groups with at least 30 employees:\n")
 print(family_site_priority)
 
 # save family and site summaries 
-write.csv(family_site_ceiling_summary,
-  here::here("tables", "question1_table4_family_site_ceiling_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(family_site_ceiling_summary,
+            here::here("tables", "question1_table4_family_site_ceiling_summary.csv"),
+            row.names = FALSE)
+}
 
-write.csv(family_site_priority,
-  here::here("tables", "question1_table5_family_site_priority.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(family_site_priority,
+            here::here("tables", "question1_table5_family_site_priority.csv"),
+            row.names = FALSE)
+}
 
 # create structural bottleneck visual - heatmap -------------------------------
 
 # show most constrained job families and ceilings
 bottleneck_plot_data <- family_ceiling_summary |>
   dplyr::slice_max(
-  order_by = high_constraint_pct,
-  n = 8,
-  with_ties = FALSE) |>
+    order_by = high_constraint_pct,
+    n = 8,
+    with_ties = FALSE) |>
   dplyr::mutate(
     job_family_label = paste0(
       tools::toTitleCase(job_family),
@@ -683,7 +701,7 @@ bottleneck_heatmap <- ggplot2::ggplot(
 # save bottleneck visual
 ggplot2::ggsave(
   filename = here::here("figures",
-    "question1_figure1_structural_bottleneck_heatmap.png"),
+                        "question1_figure1_structural_bottleneck_heatmap.png"),
   plot = bottleneck_heatmap,
   width = 8.5,
   height = 4.8,
@@ -859,10 +877,12 @@ print(career_growth_reliability)
 # Cronbach’s alpha of 0.84 suggests 3 items are related
 # enough to be combined into one career-growth score
 
-write.csv(career_growth_reliability,
-  here::here("tables",
-  "question2_table0_career_growth_reliability.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(career_growth_reliability,
+            here::here("tables",
+                       "question2_table0_career_growth_reliability.csv"),
+            row.names = FALSE)
+}
 
 # create survey measures
 listening_survey <- listening_survey |>
@@ -996,17 +1016,23 @@ cat("\nSurvey coverage by site:\n")
 print(survey_coverage_site)
 
 # save survey coverage summaries
-write.csv(survey_coverage_family,
-          here::here("tables", "question2_table1_survey_coverage_family.csv"),
-          row.names = FALSE)
+if (save_tables) {
+  write.csv(survey_coverage_family,
+            here::here("tables", "question2_table1_survey_coverage_family.csv"),
+            row.names = FALSE)
+}
 
-write.csv(survey_coverage_worker_type,
-          here::here("tables", "question2_table2_survey_coverage_worker_type.csv"),
-          row.names = FALSE)
+if (save_tables) {
+  write.csv(survey_coverage_worker_type,
+            here::here("tables", "question2_table2_survey_coverage_worker_type.csv"),
+            row.names = FALSE)
+}
 
-write.csv(survey_coverage_site,
-          here::here("tables", "question2_table3_survey_coverage_site.csv"),
-          row.names = FALSE)
+if (save_tables) {
+  write.csv(survey_coverage_site,
+            here::here("tables", "question2_table3_survey_coverage_site.csv"),
+            row.names = FALSE)
+}
 
 # calculate overall survey response rate ---------------------------------
 
@@ -1049,8 +1075,8 @@ growth_by_long_time <- analysis_data |>
     career_growth_favorable_pct = mean(
       career_growth_favorable, na.rm = TRUE)) |>
   dplyr::mutate(career_growth_mean = round(career_growth_mean, 2),
-    career_growth_favorable_pct = round(
-      career_growth_favorable_pct, 2))
+                career_growth_favorable_pct = round(
+                  career_growth_favorable_pct, 2))
 
 # compare career-growth sentiment by pay band position
 growth_by_pay_band <- analysis_data |>
@@ -1116,25 +1142,35 @@ cat("\nCareer growth by number of ceiling conditions:\n")
 print(growth_by_ceiling_count)
 
 # save career growth summaries 
-write.csv(growth_by_top_of_ladder,
-  here::here("tables", "question2_table4_growth_by_top_of_ladder.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_top_of_ladder,
+            here::here("tables", "question2_table4_growth_by_top_of_ladder.csv"),
+            row.names = FALSE)
+}
 
-write.csv(growth_by_long_time,
-  here::here("tables", "question2_table5_growth_by_long_time_in_level.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_long_time,
+            here::here("tables", "question2_table5_growth_by_long_time_in_level.csv"),
+            row.names = FALSE)
+}
 
-write.csv(growth_by_pay_band,
-  here::here("tables", "question2_table6_growth_by_pay_band_position.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_pay_band,
+            here::here("tables", "question2_table6_growth_by_pay_band_position.csv"),
+            row.names = FALSE)
+}
 
-write.csv(growth_by_constraint,
-  here::here("tables", "question2_table7_growth_by_high_constraint.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_constraint,
+            here::here("tables", "question2_table7_growth_by_high_constraint.csv"),
+            row.names = FALSE)
+}
 
-write.csv(growth_by_ceiling_count,
-  here::here("tables", "question2_table8_growth_by_ceiling_count.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_ceiling_count,
+            here::here("tables", "question2_table8_growth_by_ceiling_count.csv"),
+            row.names = FALSE)
+}
 
 # summarize career growth by job family ----------------------
 
@@ -1210,17 +1246,23 @@ cat("\nCareer growth by site:\n")
 print(growth_by_site)
 
 # save career growth group summaries
-write.csv(growth_by_family,
-  here::here("tables", "question2_table9_growth_by_family.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_family,
+            here::here("tables", "question2_table9_growth_by_family.csv"),
+            row.names = FALSE)
+}
 
-write.csv(growth_by_worker_type,
-  here::here("tables", "question2_table10_growth_by_worker_type.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_worker_type,
+            here::here("tables", "question2_table10_growth_by_worker_type.csv"),
+            row.names = FALSE)
+}
 
-write.csv(growth_by_site,
-  here::here("tables", "question2_table11_growth_by_site.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_site,
+            here::here("tables", "question2_table11_growth_by_site.csv"),
+            row.names = FALSE)
+}
 
 # summarize career growth by family and site -----------------------------
 
@@ -1250,9 +1292,11 @@ growth_by_family_site <- analysis_data |>
 cat("\nCareer growth by site and job family:\n")
 print(growth_by_family_site)
 
-write.csv(growth_by_family_site,
-  here::here("tables", "question2_table12_growth_by_family_site.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(growth_by_family_site,
+            here::here("tables", "question2_table12_growth_by_family_site.csv"),
+            row.names = FALSE)
+}
 
 
 # promotion and turnover by ceiling status -------------------
@@ -1339,28 +1383,38 @@ cat("\nPromotion and turnover by pay band position:\n")
 print(outcomes_by_pay_band)
 
 # save promotion and turnover summaries
-write.csv(outcomes_by_constraint,
-  here::here("tables", "question2_table13_outcomes_by_high_constraint.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(outcomes_by_constraint,
+            here::here("tables", "question2_table13_outcomes_by_high_constraint.csv"),
+            row.names = FALSE)
+}
 
-write.csv(outcomes_by_ceiling_count,
-  here::here("tables", "question2_table14_outcomes_by_ceiling_count.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(outcomes_by_ceiling_count,
+            here::here("tables", "question2_table14_outcomes_by_ceiling_count.csv"),
+            row.names = FALSE)
+}
 
-write.csv(outcomes_by_top_of_ladder,
-  here::here("tables", "question2_table15_outcomes_by_top_of_ladder.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(outcomes_by_top_of_ladder,
+            here::here("tables", "question2_table15_outcomes_by_top_of_ladder.csv"),
+            row.names = FALSE)
+}
 
-write.csv(outcomes_by_long_time,
-  here::here("tables", "question2_table16_outcomes_by_long_time_in_level.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(outcomes_by_long_time,
+            here::here("tables", "question2_table16_outcomes_by_long_time_in_level.csv"),
+            row.names = FALSE)
+}
 
-write.csv(outcomes_by_pay_band,
-  here::here("tables", "question2_table17_outcomes_by_pay_band_position.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(outcomes_by_pay_band,
+            here::here("tables", "question2_table17_outcomes_by_pay_band_position.csv"),
+            row.names = FALSE)
+}
 
 # adjust outcome models ------------------------------------
-  
+
 # test if high structural constraint is associated with career growth, 
 # promotion and voluntary turnover after accounting for employee and
 # organizational differences
@@ -1368,11 +1422,11 @@ write.csv(outcomes_by_pay_band,
 # turn tenure from months to years for easy analysis
 analysis_data <- analysis_data |>
   dplyr::mutate(tenure_years = tenure_months / 12,
-    manager_flag = factor(manager_flag),
-    gender = factor(gender),
-    age_band = factor(age_band),
-    site = factor(site),
-    job_family = factor(job_family))
+                manager_flag = factor(manager_flag),
+                gender = factor(gender),
+                age_band = factor(age_band),
+                site = factor(site),
+                job_family = factor(job_family))
 
 # model career growth among survey respondents
 career_growth_model <- stats::lm(
@@ -1509,21 +1563,29 @@ cat("\nAdjusted high constraint summary:\n")
 print(adjusted_constraint_summary)
 
 # save adjusted model results
-write.csv(career_growth_results,
-  here::here("tables", "question2_table18_career_growth_model_results.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(career_growth_results,
+            here::here("tables", "question2_table18_career_growth_model_results.csv"),
+            row.names = FALSE)
+}
 
-write.csv(promotion_results,
-  here::here("tables", "question2_table19_promotion_model_results.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(promotion_results,
+            here::here("tables", "question2_table19_promotion_model_results.csv"),
+            row.names = FALSE)
+}
 
-write.csv(turnover_results,
-  here::here("tables", "question2_table20_turnover_model_results.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(turnover_results,
+            here::here("tables", "question2_table20_turnover_model_results.csv"),
+            row.names = FALSE)
+}
 
-write.csv(adjusted_constraint_summary,
-  here::here("tables", "question2_table21_adjusted_constraint_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(adjusted_constraint_summary,
+            here::here("tables", "question2_table21_adjusted_constraint_summary.csv"),
+            row.names = FALSE)
+}
 
 # compare individual ceiling measures ------------------------
 
@@ -1672,25 +1734,33 @@ print(ceiling_component_summary)
 
 # save individual ceiling model results 
 
-write.csv(
-  career_growth_component_results,
-  here::here("tables", "question2_table22_career_growth_ceiling_components.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(
+    career_growth_component_results,
+    here::here("tables", "question2_table22_career_growth_ceiling_components.csv"),
+    row.names = FALSE)
+}
 
-write.csv(
-  promotion_component_results,
-  here::here("tables", "question2_table23_promotion_ceiling_components.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(
+    promotion_component_results,
+    here::here("tables", "question2_table23_promotion_ceiling_components.csv"),
+    row.names = FALSE)
+}
 
-write.csv(
-  turnover_component_results,
-  here::here("tables", "question2_table24_turnover_ceiling_components.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(
+    turnover_component_results,
+    here::here("tables", "question2_table24_turnover_ceiling_components.csv"),
+    row.names = FALSE)
+}
 
-write.csv(
-  ceiling_component_summary,
-  here::here("tables", "question2_table25_ceiling_component_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(
+    ceiling_component_summary,
+    here::here("tables", "question2_table25_ceiling_component_summary.csv"),
+    row.names = FALSE)
+}
 
 
 # compare structure and manager support ----------------------
@@ -1847,21 +1917,29 @@ cat("\nStructural estimates before and after manager support:\n")
 print(structure_estimate_comparison)
 
 # save structure and manager support results 
-write.csv(manager_support_result,
-  here::here("tables", "question2_table26_manager_support_result.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(manager_support_result,
+            here::here("tables", "question2_table26_manager_support_result.csv"),
+            row.names = FALSE)
+}
 
-write.csv(structure_manager_results,
-  here::here("tables", "question2_table27_structure_manager_results.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(structure_manager_results,
+            here::here("tables", "question2_table27_structure_manager_results.csv"),
+            row.names = FALSE)
+}
 
-write.csv(career_growth_model_comparison,
-  here::here("tables", "question2_table28_career_growth_model_comparison.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(career_growth_model_comparison,
+            here::here("tables", "question2_table28_career_growth_model_comparison.csv"),
+            row.names = FALSE)
+}
 
-write.csv(structure_estimate_comparison,
-  here::here("tables", "question2_table29_structure_estimate_comparison.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(structure_estimate_comparison,
+            here::here("tables", "question2_table29_structure_estimate_comparison.csv"),
+            row.names = FALSE)
+}
 
 # question 3: assess equity exposure and outcomes ------------------------
 # summarize equity outcomes by gender
@@ -1957,7 +2035,7 @@ equity_constraint_results <- broom::tidy(
   exponentiate = TRUE) |>
   dplyr::filter(
     grepl("^gender", term) |
-    grepl("^age_band", term)) |>
+      grepl("^age_band", term)) |>
   dplyr::mutate(
     demographic_group = dplyr::case_when(
       grepl("^gender", term) ~ "Gender",
@@ -2028,20 +2106,26 @@ cat("\nAge band reference group and levels:\n")
 print(levels(analysis_data$age_band))
 
 # save question 3 tables 
-write.csv(equity_outcome_summary,
-  here::here("tables",
-  "question3_table1_equity_outcome_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(equity_outcome_summary,
+            here::here("tables",
+                       "question3_table1_equity_outcome_summary.csv"),
+            row.names = FALSE)
+}
 
-write.csv(equity_constraint_results,
-  here::here("tables",
-  "question3_table2_adjusted_constraint_results.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(equity_constraint_results,
+            here::here("tables",
+                       "question3_table2_adjusted_constraint_results.csv"),
+            row.names = FALSE)
+}
 
-write.csv(equity_promotion_results,
-  here::here("tables",
-  "question3_table3_adjusted_promotion_results.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(equity_promotion_results,
+            here::here("tables",
+                       "question3_table3_adjusted_promotion_results.csv"),
+            row.names = FALSE)
+}
 
 # question 4: sensitivity analysis and action priorities ----------------
 
@@ -2049,7 +2133,7 @@ write.csv(equity_promotion_results,
 # Less restrictive      36 months     85% 
 # Primary               48 months     90% 
 # More restrictive      60 months     95% 
-  
+
 # test alternate ceiling thresholds
 sensitivity_thresholds <- data.frame(
   scenario = c(
@@ -2066,12 +2150,12 @@ sensitivity_results <- sensitivity_thresholds |>
     employees = nrow(analysis_data),
     high_constraint_n = sum(
       (as.integer(analysis_data$top_of_ladder) +
-          dplyr::coalesce(
-            as.integer(
-              analysis_data$time_in_level_months >= long_time_months), 0L) +
-          dplyr::coalesce(
-            as.integer(
-              analysis_data$pay_band_position >= pay_band_cutoff), 0L)) >= 2,
+         dplyr::coalesce(
+           as.integer(
+             analysis_data$time_in_level_months >= long_time_months), 0L) +
+         dplyr::coalesce(
+           as.integer(
+             analysis_data$pay_band_position >= pay_band_cutoff), 0L)) >= 2,
       na.rm = TRUE),
     
     high_constraint_pct =
@@ -2153,15 +2237,19 @@ print(priority_family_summary)
 
 
 # save question 4 tables 
-write.csv(sensitivity_results,
-  here::here("tables",
-  "question4_table1_threshold_sensitivity.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(sensitivity_results,
+            here::here("tables",
+                       "question4_table1_threshold_sensitivity.csv"),
+            row.names = FALSE)
+}
 
-write.csv(priority_family_summary,
-  here::here("tables",
-  "question4_table2_priority_family_summary.csv"),
-  row.names = FALSE)
+if (save_tables) {
+  write.csv(priority_family_summary,
+            here::here("tables",
+                       "question4_table2_priority_family_summary.csv"),
+            row.names = FALSE)
+}
 
 
 # end of script ---------------------------------
