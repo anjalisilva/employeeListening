@@ -449,13 +449,21 @@ tidyr</code></pre>
 </div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
-<p>Clone the repository and move into the project directory:</p>
+<p>Open Terminal, clone the repository, and move into the project
+directory:</p>
 <pre class="bash"><code>git clone https://github.com/anjalisilva/employeeListening.git
 cd employeeListening</code></pre>
-<p>Install <code>renv</code> if not available:</p>
-<pre class="r"><code>install.packages(&quot;renv&quot;)</code></pre>
+<p>Start R from Terminal:</p>
+<pre class="bash"><code>R</code></pre>
+<p>In the R console, install <code>renv</code> if it is not already
+available:</p>
+<pre class="r"><code>if (!requireNamespace(&quot;renv&quot;, quietly = TRUE)) {
+  install.packages(&quot;renv&quot;)
+}</code></pre>
 <p>Restore the project environment from the lockfile:</p>
 <pre class="r"><code>renv::restore()</code></pre>
+<p>Exit the R console:</p>
+<pre class="r"><code>q()</code></pre>
 <p><code>renv::restore()</code> installs the package versions recorded
 in <code>renv.lock</code>, including <code>readxl</code>,
 <code>dplyr</code>, <code>janitor</code>, <code>here</code>,
@@ -463,7 +471,7 @@ in <code>renv.lock</code>, including <code>readxl</code>,
 <code>tidyr</code>.</p>
 <p>Place the authorized dataset in:</p>
 <pre class="text"><code>data/Case Dataset Aerodyne.xlsx</code></pre>
-<p>Run the analysis from the project root:</p>
+<p>Back in Terminal, run the analysis from the project root:</p>
 <pre class="bash"><code>Rscript code/aerodyne_case_study.R</code></pre>
 <p>The script asks whether tables and figures should be saved:</p>
 <pre class="text"><code>Save tables to the tables folder? [y/N]:

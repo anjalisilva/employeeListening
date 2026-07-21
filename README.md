@@ -58,23 +58,37 @@ Exact package versions are recorded in `renv.lock`.
 
 ## Installation
 
-Clone the repository and move into the project directory:
+Open Terminal, clone the repository, and move into the project directory:
 
 ```bash
 git clone https://github.com/anjalisilva/employeeListening.git
 cd employeeListening
 ```
 
-Install `renv` if not available:
+Start R from Terminal:
+
+```bash
+R
+```
+
+In the R console, install `renv` if it is not already available:
 
 ```r
-install.packages("renv")
+if (!requireNamespace("renv", quietly = TRUE)) {
+  install.packages("renv")
+}
 ```
 
 Restore the project environment from the lockfile:
 
 ```r
 renv::restore()
+```
+
+Exit the R console:
+
+```r
+q()
 ```
 
 `renv::restore()` installs the package versions recorded in `renv.lock`, 
@@ -87,7 +101,7 @@ Place the authorized dataset in:
 data/Case Dataset Aerodyne.xlsx
 ```
 
-Run the analysis from the project root:
+Back in Terminal, run the analysis from the project root:
 
 ```bash
 Rscript code/aerodyne_case_study.R
@@ -168,4 +182,3 @@ files in `figures/`.
 Author of this project is Anjali Silva. This project welcomes issues,
 enhancement requests, and other contributions. To submit an issue,
 use the GitHub issues page: https://github.com/anjalisilva/employeeListening/tree/main.
-
