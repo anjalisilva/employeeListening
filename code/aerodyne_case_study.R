@@ -31,12 +31,40 @@ library(tidyr)
 
 # User inputs ------------------------------------------------------------
 
-# ask whether CSV tables should be saved; default is no
-save_tables_input <- readline(
-  prompt = "Save tables to the tables folder? Type Yes or press Enter for No: ")
+# ask if tables should be saved; default is no
+ask_yes_no <- function(prompt_text) {
+  cat(prompt_text)
+  flush.console()
+  if (interactive()) {
+    user_input <- readline()
+  } else {
+    input_connection <- file("stdin", open = "r")
+    user_input <- readLines(
+      con = input_connection,
+      n = 1L,
+      warn = FALSE)
+    close(input_connection)
+  }
+  # default is FALSE when user presses Enter or provides no input
+  length(user_input) == 1L &&
+    tolower(trimws(user_input)) %in% c("y", "yes")
+}
 
-save_tables <- tolower(trimws(save_tables_input)) == "yes"
 
+# ask whether tables should be saved
+save_tables <- ask_yes_no(
+  "Save tables to the tables folder? [y/N]: ")
+
+cat("Save tables:", if (save_tables) "Yes" else "No", "\n")
+
+# ask whether figures should be saved
+save_figures <- ask_yes_no(
+  "Save figures to the figures folder? [y/N]: "
+)
+
+cat("Save figures:",
+  if (save_figures) "Yes" else "No",
+  "\n")
 # assumptions ----------------------------------------------------------
 
 # long time in level defined as 48 months or more
@@ -697,16 +725,16 @@ bottleneck_heatmap <- ggplot2::ggplot(
     legend.title = element_text(size = 8),
     legend.text = element_text(size = 7))
 
-
-# save bottleneck visual
-ggplot2::ggsave(
-  filename = here::here("figures",
-                        "question1_figure1_structural_bottleneck_heatmap.png"),
-  plot = bottleneck_heatmap,
-  width = 8.5,
-  height = 4.8,
-  dpi = 300)
-
+if (save_figures) {
+  # save bottleneck visual
+  ggplot2::ggsave(
+    filename = here::here("figures",
+    "question1_figure1_structural_bottleneck_heatmap.png"),
+    plot = bottleneck_heatmap,
+    width = 8.5,
+    height = 4.8,
+    dpi = 300)
+}
 
 # visualize structural bottlenecks by job family -------------------------
 
@@ -838,17 +866,19 @@ structural_bottleneck_bar_chart <- ggplot2::ggplot(
 # display chart
 print(structural_bottleneck_bar_chart)
 
-# save chart
-ggplot2::ggsave(
-  filename = here::here(
-    "figures",
-    "question1_figure2_structural_bottlenecks_by_job_family.png"),
-  plot = structural_bottleneck_bar_chart,
-  width = 9.5,
-  height = 5.4,
-  units = "in",
-  dpi = 300,
-  bg = "white")
+if (save_figures) {
+  # save chart
+  ggplot2::ggsave(
+    filename = here::here(
+      "figures",
+      "question1_figure2_structural_bottlenecks_by_job_family.png"),
+    plot = structural_bottleneck_bar_chart,
+    width = 9.5,
+    height = 5.4,
+    units = "in",
+    dpi = 300,
+    bg = "white")
+}
 # question 2: prepare listening survey measures --------------------------
 
 # define survey items used in each measure
