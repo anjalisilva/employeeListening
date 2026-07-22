@@ -30,8 +30,8 @@ load_workbook_data <- function() {
   # if file missing tabs, print message to user
   if (length(missing_sheets) > 0) {
     stop("Missing workbook tabs: ", 
-         paste(missing_sheets, collapse = ", "))} 
-  else {cat("All 5 required workbook tabs are present:\n",
+         paste(missing_sheets, collapse = ", "))
+    } else {cat("All 5 required workbook tabs are present:\n",
             paste(available_sheets, collapse = "\n"),"\n")}
   
   # read workbook content 
@@ -84,8 +84,7 @@ load_workbook_data <- function() {
        employees_raw = employees_raw,
        job_architecture_raw = job_architecture_raw,
        listening_survey_raw = listening_survey_raw,
-       sheet_sizes = sheet_sizes
-  )
+       sheet_sizes = sheet_sizes)
 }
 
 # [END]
