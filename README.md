@@ -134,7 +134,7 @@ employeeListening/
 ├── R/
 │   ├── 0_utils.R
 │   ├── 1_data_import.R
-│   ├── 2_data_preparaation.R
+│   ├── 2_data_preparation.R
 │   ├── 3_question1_structural_ceilings.R
 │   ├── 4_question2_business_outcomes.R
 │   ├── 5_question3_equity.R
