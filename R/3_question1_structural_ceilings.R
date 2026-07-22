@@ -164,6 +164,49 @@ run_question1 <- function(
     dplyr::mutate(across(ends_with("_pct"), ~ round(.x, 2))) |>
     dplyr::arrange(desc(high_constraint_pct))
   
+  # check worker type in priority job families
+  priority_family_worker_type <- employees |>
+    dplyr::filter(
+      job_family %in% c(
+        "maintenance & mro",
+        "quality inspection",
+        "manufacturing/production tech")) |>
+    dplyr::count(
+      job_family,
+      worker_type,
+      name = "employees") |>
+    dplyr::group_by(job_family) |>
+    dplyr::mutate(
+      employee_pct = round(
+        employees / sum(employees) * 100,
+        2)) |>
+    dplyr::ungroup() |>
+    dplyr::arrange(
+      job_family,
+      dplyr::desc(employees))
+  
+  # compare structural constraint across hourly job families
+  hourly_family_constraint <- employees |>
+    dplyr::filter(worker_type == "hourly") |>
+    dplyr::group_by(job_family) |>
+    dplyr::summarise(
+      employees = dplyr::n(),
+      levels_in_family = dplyr::first(levels_in_family),
+      high_constraint_n = sum(
+        high_constraint,
+        na.rm = TRUE),
+      high_constraint_pct = mean(
+        high_constraint,
+        na.rm = TRUE) * 100) |>
+    dplyr::mutate(
+      high_constraint_pct = round(
+        high_constraint_pct,
+        2)) |>
+    dplyr::arrange(
+      dplyr::desc(high_constraint_pct))
+  
+  
+  
   # summarize by site
   site_ceiling_summary <- employees |>
     dplyr::group_by(site) |>
@@ -187,6 +230,9 @@ run_question1 <- function(
   
   cat("\nStructural ceilings by worker type:\n")
   print(worker_type_ceiling_summary)
+  
+  cat("\nWorker type in priority job families:\n")
+  print(priority_family_worker_type)
   
   cat("\nStructural ceilings by site:\n")
   print(site_ceiling_summary |>
@@ -500,6 +546,7 @@ run_question1 <- function(
        pay_band_exceptions = pay_band_exceptions,
        family_ceiling_summary = family_ceiling_summary,
        worker_type_ceiling_summary = worker_type_ceiling_summary,
+       priority_family_worker_type = priority_family_worker_type,
        site_ceiling_summary = site_ceiling_summary,
        family_site_ceiling_summary = family_site_ceiling_summary,
        family_site_priority = family_site_priority,
