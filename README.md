@@ -124,7 +124,7 @@ or entering any other response does not save those files.
 
 ```text
 employeeListening/
-├── aerodyne-case-study.Rproj
+├── employeeListening.Rproj
 ├── README.md
 ├── .Rprofile
 ├── renv.lock
