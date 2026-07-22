@@ -465,14 +465,15 @@ available:</p>
 <p>Exit the R console:</p>
 <pre class="r"><code>q()</code></pre>
 <p><code>renv::restore()</code> installs the package versions recorded
-in <code>renv.lock</code>, including <code>readxl</code>,
-<code>dplyr</code>, <code>janitor</code>, <code>here</code>,
-<code>broom</code>, <code>psych</code>, <code>ggplot2</code>, and
-<code>tidyr</code>.</p>
+in <code>renv.lock</code>.</p>
 <p>Place the authorized dataset in:</p>
 <pre class="text"><code>data/Case Dataset Aerodyne.xlsx</code></pre>
 <p>Back in Terminal, run the analysis from the project root:</p>
-<pre class="bash"><code>Rscript code/aerodyne_case_study.R</code></pre>
+<pre class="bash"><code>Rscript code/run_analysis.R</code></pre>
+<p><code>run_analysis.R</code> loads required packages, sources all
+numbered function files from the <code>R/</code> folder in order,
+creates analysis configuration values, and runs the complete workflow
+through <code>run_analysis()</code>.</p>
 <p>The script asks whether tables and figures should be saved:</p>
 <pre class="text"><code>Save tables to the tables folder? [y/N]:
 Save figures to the figures folder? [y/N]:</code></pre>
@@ -491,8 +492,17 @@ not save those files.</p>
 ├── renv/
 │   ├── activate.R
 │   └── settings.json
+├── R/
+│   ├── 0_utils.R
+│   ├── 1_data.io.R
+│   ├── 2_data_preparaation.R
+│   ├── 3_question1_structural_ceilings.R
+│   ├── 4_question2_business_outcomes.R
+│   ├── 5_question3_equity.R
+│   ├── 6_question4_sensitivity.R
+│   └── 7_pipeline.R
 ├── code/
-│   └── aerodyne_case_study.R
+│   └── run_analysis.R
 ├── data/
 │   └── Case Dataset Aerodyne.xlsx
 ├── figures/
@@ -503,6 +513,10 @@ not save those files.</p>
 <p>The Excel workbook is intentionally excluded from the public
 repository. The local <code>renv</code> package library should also
 remain excluded from version control.</p>
+<p>The numbered files in <code>R/</code> are sourced in ascending order.
+Each file contains functions for one part of the workflow, while
+<code>7_pipeline.R</code> defines <code>run_analysis()</code> and
+coordinates the full analysis.</p>
 </div>
 <div id="key-sections" class="section level2">
 <h2>Key Sections</h2>
@@ -570,6 +584,16 @@ immediate enterprise-wide redesign.</td>
 <p>Because the source data are observational, adjusted model results
 describe associations and should not be interpreted as causal
 effects.</p>
+<p>Key assumptions include defining long time in level as 48 months or
+more, near top of pay band as 90% or more, and high structural
+constraint as meeting at least two of three ceiling conditions.
+Listening-survey items are interpreted using a 1-to-5 agreement scale,
+with stuck_1 reverse-scored so higher values are favorable. Missing
+ceiling indicators are treated as no confirmed evidence of constraint,
+which may underestimate prevalence, and subgroup results are reported
+only when at least 30 employees are present. Data collection and
+extraction dates were not provided, so current relevance of findings
+could not be confirmed.</p>
 </div>
 <div id="figures" class="section level2">
 <h2>Figures</h2>

@@ -91,9 +91,7 @@ Exit the R console:
 q()
 ```
 
-`renv::restore()` installs the package versions recorded in `renv.lock`, 
-including `readxl`, `dplyr`, `janitor`, `here`, `broom`, `psych`, `ggplot2`,
-and `tidyr`.
+`renv::restore()` installs the package versions recorded in `renv.lock`.
 
 Place the authorized dataset in:
 
@@ -104,8 +102,12 @@ data/Case Dataset Aerodyne.xlsx
 Back in Terminal, run the analysis from the project root:
 
 ```bash
-Rscript code/aerodyne_case_study.R
+Rscript code/run_analysis.R
 ```
+
+`run_analysis.R` loads required packages, sources all numbered function files
+from the `R/` folder in order, creates analysis configuration values, and runs
+the complete workflow through `run_analysis()`.
 
 The script asks whether tables and figures should be saved:
 
@@ -129,8 +131,17 @@ employeeListening/
 ├── renv/
 │   ├── activate.R
 │   └── settings.json
+├── R/
+│   ├── 0_utils.R
+│   ├── 1_data.io.R
+│   ├── 2_data_preparaation.R
+│   ├── 3_question1_structural_ceilings.R
+│   ├── 4_question2_business_outcomes.R
+│   ├── 5_question3_equity.R
+│   ├── 6_question4_sensitivity.R
+│   └── 7_pipeline.R
 ├── code/
-│   └── aerodyne_case_study.R
+│   └── run_analysis.R
 ├── data/
 │   └── Case Dataset Aerodyne.xlsx
 ├── figures/
@@ -144,6 +155,10 @@ The Excel workbook is intentionally excluded from the public repository.
 The local `renv` package library should also remain excluded from version
 control.
 
+The numbered files in `R/` are sourced in ascending order. Each file contains
+functions for one part of the workflow, while `7_pipeline.R` defines
+`run_analysis()` and coordinates the full analysis.
+
 ## Key Sections
 
 | Question | Analytical approach | Principal finding |
@@ -155,6 +170,16 @@ control.
 
 Because the source data are observational, adjusted model results describe
 associations and should not be interpreted as causal effects.
+
+Key assumptions include defining long time in level as 48 months or more, near 
+top of pay band as 90% or more, and high structural constraint as meeting at
+least two of three ceiling conditions. Listening-survey items are interpreted
+using a 1-to-5 agreement scale, with stuck_1 reverse-scored so higher values 
+are favorable. Missing ceiling indicators are treated as no confirmed evidence
+of constraint, which may underestimate prevalence, and subgroup results are 
+reported only when at least 30 employees are present. Data collection and
+extraction dates were not provided, so current relevance of findings could 
+not be confirmed.
 
 ## Figures
 
@@ -170,7 +195,6 @@ job families.
 The bar chart above compares the percentage of employees meeting the 
 high-constraint definition within each job family and classifies 
 families for high structural priority, structural review, or monitoring.
-
 
 
 To display these images on GitHub, run the script, select `y` when
