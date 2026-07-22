@@ -38,7 +38,7 @@ architecture.
 |---|---|
 | R | R version 4.6.1 (2026-06-24) |
 | Platform | x86_64-apple-darwin20 |
-| Operating system | macOS Ventura 13.7.8 |
+| Operating system | macOS |
 | Environment management | `renv` |
 
 The analysis uses the following R packages:
