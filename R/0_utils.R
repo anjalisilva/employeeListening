@@ -5,6 +5,7 @@
 # Analysis date: 17 July 2026
 #
 # Purpose: ask if tables should be saved; default is no
+
 ask_yes_no <- function(prompt_text) {
   cat(prompt_text)
   flush.console()
@@ -22,3 +23,5 @@ ask_yes_no <- function(prompt_text) {
   length(user_input) == 1L &&
     tolower(trimws(user_input)) %in% c("y", "yes")
 }
+
+# [END]
