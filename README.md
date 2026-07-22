@@ -164,7 +164,7 @@ functions for one part of the workflow, while `7_pipeline.R` defines
 | Question | Analytical approach | Principal finding |
 |---|---|---|
 | **1. Where do structural career ceilings occur?** | Defines high structural constraint as meeting at least two of three conditions: being at the top of the available job ladder, spending at least 48 months in level, or reaching at least 90% of the assigned pay band. | High constraint affected 593 of 6,000 employees (9.88%) and was concentrated in three short-ladder technical families: Maintenance and MRO (19.95%), Quality Inspection (17.87%), and Manufacturing/Production Tech (16.91%). |
-| **2. Are structural ceilings associated with employee and business outcomes?** | Builds a three-item career-growth scale, evaluates internal consistency, compares observed outcomes, and fits adjusted linear and logistic regression models. | The career-growth scale showed good internal consistency (`Cronbach’s alpha = 0.84`). High-constraint employees reported lower career growth (2.16 vs. 3.55), had lower recent-promotion rates (1.69% vs. 18.53%), and had higher voluntary-turnover rates (38.28% vs. 9.30%). Adjusted estimates remained substantial: career growth −0.95 points, promotion OR 0.11, and turnover OR 2.71. Note: OR = Odds ratio. |
+| **2. Are structural ceilings associated with employee and business outcomes?** | Builds a three-item career-growth scale, evaluates internal consistency, compares observed outcomes, and fits adjusted linear and logistic regression models. | The career-growth scale showed good internal consistency (`Cronbach’s alpha = 0.84`). High-constraint employees reported lower career growth (2.16 vs. 3.55), had lower recent-promotion rates (1.69% vs. 18.53%), and had higher voluntary-turnover rates (38.28% vs. 9.30%). Adjusted estimates remained substantial: career growth −0.95 points, promotion OR 0.11, and turnover OR 2.71. Note: OR = odds ratio. |
 | **3. Is there potential equity exposure?** | Compares structural constraint, career growth, promotion, and turnover across gender and age groups, followed by adjusted models that account for workforce composition. | The analysis identifies demographic differences that warrant continued monitoring and formal equity review. These results are treated as diagnostic associations rather than evidence of causality or individual-level decision rules. |
 | **4. Are the findings robust, and where should action begin?** | Tests more permissive, base, and stricter threshold scenarios and combines structural, sentiment, promotion, and turnover evidence to prioritize job families. | The evidence supports targeted review and a controlled pilot in the most constrained short-ladder technical families rather than an immediate enterprise-wide redesign. |
 
@@ -203,6 +203,6 @@ files in `figures/`.
 
 ## Contributions
 
-Author of this project is Anjali Silva. This project welcomes issues,
+The author of this project is Anjali Silva. This project welcomes issues,
 enhancement requests, and other contributions. To submit an issue,
-use the GitHub issues page: https://github.com/anjalisilva/employeeListening/tree/main.
+use the GitHub issues page: https://github.com/anjalisilva/employeeListening/issues.
