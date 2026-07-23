@@ -8,6 +8,16 @@ listening-survey data; validates the career-growth measure; evaluates
 adjusted relationships; assesses equity exposure; and tests the sensitivity
 of key assumptions.
 
+## Table of Contents
+
+- [Dataset](#dataset)
+- [Language and Tool Versions](#language-and-tool-versions)
+- [Installation](#installation)
+- [Project Files](#project-files)
+- [Key Sections](#key-sections)
+- [Figures](#figures)
+- [Contributions](#contributions)
+
 ## Dataset
 
 The analysis requires the following workbook to be placed in the project’s `data/` subdirectory:
@@ -57,6 +67,9 @@ tidyr
 Exact package versions are recorded in `renv.lock`.
 
 ## Installation
+
+This analysis assumes that R and Git are already installed and available from
+the command line.
 
 Open Terminal, clone the repository, and move into the project directory:
 
@@ -119,6 +132,8 @@ Save figures to the figures folder? [y/N]:
 Both options default to **No**. Enter `y` or `yes` to write CSV tables or
 PNG figures to their respective output directories. Pressing Enter, 
 or entering any other response does not save those files.
+
+Alternatively, RStudio may be used for interactive exploration.
 
 ## Project Files
 
@@ -185,17 +200,19 @@ not be confirmed.
 
 ![](figures/question1_figure1_structural_bottleneck_heatmap.png)
 
-The heatmap above compares the prevalence of individual ceiling indicators and 
-the combined high-constraint definition across the eight most constrained
-job families.
+**Figure 1. Structural Bottleneck Heatmap**
 
+Figure 1 compares the prevalence of individual ceiling indicators and the
+combined high-constraint definition across the eight most constrained
+job families.
 
 ![](figures/question1_figure2_structural_bottlenecks_by_job_family.png)
 
-The bar chart above compares the percentage of employees meeting the 
-high-constraint definition within each job family and classifies 
-families for high structural priority, structural review, or monitoring.
+**Figure 2. Structural Bottlenecks by Job Family**
 
+Figure 2 compares the percentage of employees meeting the high-constraint
+definition within each job family and classifies families for high structural
+priority, structural review, or monitoring.
 
 To display these images on GitHub, run the script, select `y` when
 asked whether figures should be saved, and commit the generated PNG
